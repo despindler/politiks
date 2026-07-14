@@ -12,7 +12,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 3. Full Swiss snapshot and data-quality report | Complete | 2026-07-14 |
 | 4. Auditable topic and beneficiary classification | Complete | 2026-07-14 |
 | 5. MariaDB schema and deterministic publication | Complete | 2026-07-14 |
-| 6. PHP shell, security baseline, and Google authentication | Not started | — |
+| 6. PHP shell, security baseline, and Google authentication | Complete | 2026-07-14 |
 | 7. Public catalogue and personal insight management | Not started | — |
 | 8. Insight wizard and parliamentary evidence search | Not started | — |
 | 9. Campaign-context attachments | Not started | — |
@@ -220,3 +220,40 @@ Create the deployed application schema and a deterministic, rollback-safe bounda
 - Local acceptance used the compact fixture for speed. The same mapping accepts the full classified SQLite snapshot; production publication must be run from a freshly rebuilt and verified full database.
 - No real classification has been human-reviewed, so the correctly published reviewed-classification count is zero.
 - Runtime queries must join current catalogue/search data through `reference_state`, while saved insights must continue using their stored `reference_publication_id`.
+
+## Milestone 6 — Deployable PHP shell, security baseline, and Google authentication
+
+### Goal
+
+Establish the framework-free production runtime under `site/`, secure its HTTP/session boundary, and implement Google-only authentication with server-side token verification.
+
+### Work completed
+
+- Replaced the placeholder with a German signed-out/signed-in application shell, responsive navigation, accessible landmarks/focus behavior, public-catalogue placeholder, and full-width primary actions.
+- Added a persisted system/light/dark theme selector with an early local theme script to prevent a theme flash.
+- Pinned and copied Bootstrap 5.3.8, Bootstrap Icons 1.13.1, their required fonts, and licenses into the deployable assets. Google Identity Services remains the only remote browser script, as required by Google.
+- Added a small autoloaded PHP request structure with validated environment loading, lazy PDO connectivity, bounded JSON parsing, consistent errors, and production-safe startup behavior.
+- Added Apache front-controller and deny rules plus a matching local PHP router. Environment variants, backend PHP, schema files, storage, and logs return 404 and cannot expose source.
+- Added a restrictive CSP covering same-origin assets and only Google's documented Identity Services script/style/frame/connect endpoints and profile-image host, with framing, MIME, referrer, and permissions headers.
+- Added strict HTTP-only SameSite session cookies, HTTPS-aware secure cookies, session-ID rotation on login, complete logout destruction, and per-session CSRF protection for every mutation.
+- Added `GET /api/auth-config`, `GET /api/session`, `POST /api/google-login`, and `POST /api/logout` with stable German JSON errors.
+- Implemented dependency-injected Google JWT verification: three-part JWT structure, RS256, key ID, JWKS lookup/cache, RSA JWK or certificate conversion, OpenSSL signature, exact audience, issuer, expiration, verified email, bounded identity fields, and HTTPS Google avatar restriction.
+- Implemented transactional MariaDB user create/reuse/link behavior. Stable Google subject is primary; a verified unique email can link an existing unlinked record; conflicting linked identities and disabled accounts are rejected.
+- Added an explicitly double-guarded test verifier (`APP_ENV=test` plus `POLITIKS_TEST_AUTH=enabled`) used only by Playwright. Production cannot select it with ordinary configuration.
+- Added protected cache/log/upload runtime roots and documented Google Cloud, local server, deployment, endpoint, CSP, and PHP-extension setup.
+
+### Verification
+
+- PHP syntax checks passed across all runtime and test PHP files.
+- Pure PHP suite: 21 authentication/security/foundation tests passed, including malformed JWT, signature, audience, issuer, expiration, unverified email, unavailable keys/OpenSSL, disabled configuration, PEM conversion, session rotation, and CSRF.
+- MariaDB integration created and reused one Google user, linked an existing unlinked user by verified email without duplication, and rejected a disabled account; test rows were removed afterward.
+- Playwright covered configured/disabled Google states, login/logout, HTTP-only SameSite cookie rotation, missing/invalid credentials, CSRF rejection, local assets, private-path denial, responsive navigation, and persisted theme behavior.
+- Reviewed visual baselines cover signed-out full pages and signed-in hero states on desktop/mobile in light/dark modes. An unstable Chromium mobile full-page stitching artifact was isolated by using viewport-level authenticated baselines; ordinary browser rendering remained correct.
+- Clean schema reset/publication retained 35 schema statements, 34 tables, and the active fixture publication after making `google_sub` nullable for safe verified-email linking.
+
+### Known limitations and next implications
+
+- The local PHP CLI remains 8.2.30 and lacks OpenSSL, cURL, and `mbstring`. Production JWT signature execution therefore still requires a smoke check on PHP 8.4 with the target extensions; deterministic tests cover its failure boundary and all claim validation.
+- The local database identifies only as MySQL-compatible. MariaDB 10.6.18 host verification remains part of final deployment acceptance.
+- Google login has been exercised with the injected verifier, not a live Google account, so the production authorised origin and client ID must be smoke-tested on the target HTTPS origin.
+- The signed-in "Meine Insights" area is deliberately a shell. Its authorization-correct lifecycle and public catalogue arrive in Milestone 7.

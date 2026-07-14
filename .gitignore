@@ -11,6 +11,8 @@ site/storage/uploads/*
 !site/storage/uploads/.gitkeep
 site/storage/logs/*
 !site/storage/logs/.gitkeep
+site/storage/cache/*
+!site/storage/cache/.gitkeep
 
 # Python
 .venv/

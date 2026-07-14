@@ -1,0 +1,7 @@
+.sticky-top {
+  position: static !important;
+}
+
+* {
+  caret-color: transparent !important;
+}

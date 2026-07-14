@@ -175,7 +175,45 @@ Publication records the source snapshot/schema, source-file digest, taxonomy ver
 
 The generated SQLite database can come from either the fixture or full import. Production publication should use a freshly verified full import. Bootstrap and publication are CLI tools outside `site/`; there is no HTTP installer. The deployable schema contract is documented in `site/database/README.md`.
 
-The PHP shell and Google authentication are delivered by the next milestone. Runtime files continue to live entirely under `site/`.
+The deployable runtime and every browser asset live entirely under `site/`; development tooling remains outside it.
+
+## Web application and Google Sign-In
+
+The framework-free application is served through `site/index.php`. Bootstrap 5.3.8 and Bootstrap Icons 1.13.1 are pinned in `package.json` and copied into `site/assets/vendor/`, so ordinary UI rendering has no CDN dependency. Google Identity Services is the only remotely loaded browser script and is loaded only when `GOOGLE_CLIENT_ID` is configured.
+
+For local development, point the application at the ignored test environment and start PHP with its router:
+
+```powershell
+$env:POLITIKS_ENV_FILE = (Resolve-Path .env.test).Path
+php -S 127.0.0.1:8080 -t site site/router.php
+```
+
+Production uses `site/.env`. Start from `.env.example`, set `APP_ENV=production`, use the public HTTPS URL as `APP_URL`, generate an unpredictable `APP_SECRET`, and provide the MariaDB and Google client settings. Generate a suitable application secret without printing any other configuration:
+
+```powershell
+php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
+```
+
+In Google Cloud, create an OAuth 2.0 **Web application** client, add the exact production origin (scheme, host, and port when non-standard) under authorised JavaScript origins, and put its public client ID in `GOOGLE_CLIENT_ID`. No Google client secret is used by this ID-token flow. Keep the official JWKS endpoint as `GOOGLE_JWKS_URL`. Google requires its Identity Services library to be loaded from its hosted URL rather than self-hosted; the application's CSP is scoped accordingly. See the [official Google setup guide](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
+
+Public authentication endpoints:
+
+- `GET /api/auth-config` exposes only the public Google client ID or `null`.
+- `GET /api/session` returns authentication state and a same-session CSRF token.
+- `POST /api/google-login` verifies the Google ID token server-side and then creates, reuses, or safely links the local user.
+- `POST /api/logout` destroys the authenticated session.
+
+Both mutations require `X-CSRF-Token`. Login rotates the session ID. Cookies are HTTP-only, SameSite=Lax, and secure when `APP_URL` is HTTPS. Google JWT verification requires RS256, a matching key ID/signature, the configured audience, a permitted issuer, a future expiration, and a verified unique email.
+
+Apache must allow `.htaccess` overrides for the deployment directory. The committed rules route requests through `index.php`, disable directory listing, and hide environment files, backend PHP, database scripts, logs, and private storage. Do not deploy without those rules taking effect.
+
+Run the full application verification (unit tests, real test-database auth integration, API/browser behavior, and visual baselines):
+
+```powershell
+npm.cmd run verify
+```
+
+The production verifier needs OpenSSL and prefers cURL for Google's signing keys, with a verified HTTPS stream fallback. The local PHP CLI is currently 8.2.30 and lacks OpenSSL, cURL, and `mbstring`; production Google login therefore remains a target-host smoke check until PHP 8.4 with the required extensions is used locally.
 
 ## Security
 

@@ -25,13 +25,23 @@ module.exports = defineConfig({
       name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'chromium-mobile',
+      use: { ...devices['Pixel 7'] },
+    },
   ],
   webServer: {
-    command: 'php -S 127.0.0.1:8080 -t site',
+    command: 'php -S 127.0.0.1:8080 -t site site/router.php',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 15_000,
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      ...process.env,
+      APP_ENV: 'test',
+      POLITIKS_TEST_AUTH: 'enabled',
+      GOOGLE_CLIENT_ID: 'playwright-client.apps.googleusercontent.com',
+    },
   },
 });

@@ -555,7 +555,7 @@ CREATE TABLE IF NOT EXISTS ref_vote_search_document (
 
 CREATE TABLE IF NOT EXISTS app_user (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    google_sub VARCHAR(191) NOT NULL,
+    google_sub VARCHAR(191) NULL,
     email VARCHAR(320) NOT NULL,
     display_name VARCHAR(255) NOT NULL,
     avatar_url TEXT NULL,

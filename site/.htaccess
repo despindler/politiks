@@ -1,0 +1,27 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteRule "(^|/)\." - [R=404,L]
+    RewriteRule "^(?:backend|database|storage|logs)(?:/|$)" - [R=404,L,NC]
+    RewriteRule "(?:^|/)[^/]*\.(?:env|sql|log)$" - [R=404,L,NC]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "^(?:\.env.*|.*\.(?:sql|log))$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^(?:\.env.*|.*\.(?:sql|log))$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
