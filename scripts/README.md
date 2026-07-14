@@ -18,3 +18,5 @@ Release commands:
 
 - `audit_deployment.php` examines the versioned `site/` package, lints its PHP, and fails if runtime files are missing or test credentials, local routers, source snapshots, SQLite files, or development tooling are present.
 - `verify_mvp.php --env=.env.test --reset-test-database` performs the deliberately destructive clean-test acceptance sequence and refuses any environment filename other than `.env.test`.
+- `split_sql_dump.php` streams a plain or gzip SQL dump into a requested number of statement-safe `.sql.gz` files. Every part has independent session setup/cleanup so browser-based database tools can import the files consecutively in separate requests.
+- `verify_split_sql_dump.php` checks every generated gzip size and checksum, decompresses all parts, validates their wrappers and byte ranges, and proves that their combined SQL payload reproduces the source checksum.

@@ -177,6 +177,8 @@ Publication records the source snapshot/schema, source-file digest, taxonomy ver
 
 The generated SQLite database can come from either the fixture or full import. Production publication should use a freshly verified full import. Bootstrap and publication are CLI tools outside `site/`; there is no HTTP installer. The deployable schema contract is documented in `site/database/README.md`.
 
+For a shared host where phpMyAdmin cannot accept the complete production dump, five consecutively importable gzip parts are provided under `database/exports/`. Select a clean target database and import `part-01-of-05.sql.gz` through `part-05-of-05.sql.gz` exactly once in numeric order. The checksums, failure-recovery rule, verification command, and regeneration command are documented in `database/exports/README.md`.
+
 The deployable runtime and every browser asset live entirely under `site/`; development tooling remains outside it.
 
 ## Web application and Google Sign-In

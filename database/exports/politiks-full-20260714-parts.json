@@ -1,0 +1,58 @@
+{
+    "source_file": "politiks-full-20260714.sql.gz",
+    "source_bytes": 362897689,
+    "source_sha256": "c281ae6fdde1aedc4d0dd3dc127661522a986864a77964a8c690cb0fb80f5166",
+    "part_count": 5,
+    "parts": [
+        {
+            "part": 1,
+            "file": "politiks-full-20260714-part-01-of-05.sql.gz",
+            "payload_start_byte": 0,
+            "payload_end_byte": 73140226,
+            "payload_bytes": 73140226,
+            "sql_bytes": 73141909,
+            "gzip_bytes": 7457235,
+            "sha256": "4ac5872e450094911728646ed70e3b8c162af72675a817452488609387132ae3"
+        },
+        {
+            "part": 2,
+            "file": "politiks-full-20260714-part-02-of-05.sql.gz",
+            "payload_start_byte": 73140226,
+            "payload_end_byte": 145491765,
+            "payload_bytes": 72351539,
+            "sql_bytes": 72353222,
+            "gzip_bytes": 7592101,
+            "sha256": "1f2d346d607a2713d720d0fc99094df6541e703ca926f56e22798e6c6301a5b5"
+        },
+        {
+            "part": 3,
+            "file": "politiks-full-20260714-part-03-of-05.sql.gz",
+            "payload_start_byte": 145491765,
+            "payload_end_byte": 217857934,
+            "payload_bytes": 72366169,
+            "sql_bytes": 72367852,
+            "gzip_bytes": 7565711,
+            "sha256": "32fd1a81f310a958f01ce6e3c8e8c44da4670f73b44e99d4e0ec530a05aa48fb"
+        },
+        {
+            "part": 4,
+            "file": "politiks-full-20260714-part-04-of-05.sql.gz",
+            "payload_start_byte": 217857934,
+            "payload_end_byte": 291266807,
+            "payload_bytes": 73408873,
+            "sql_bytes": 73410556,
+            "gzip_bytes": 7731152,
+            "sha256": "be6e7f66b42263b8e570d832d853da87fc65224137b4a04232476e5ef46e34e4"
+        },
+        {
+            "part": 5,
+            "file": "politiks-full-20260714-part-05-of-05.sql.gz",
+            "payload_start_byte": 291266807,
+            "payload_end_byte": 362897689,
+            "payload_bytes": 71630882,
+            "sql_bytes": 71632565,
+            "gzip_bytes": 7362099,
+            "sha256": "509e38b219bcd976a9f8d733894d8ad471b722cb18513193d6e8c7d8f31b88d2"
+        }
+    ]
+}

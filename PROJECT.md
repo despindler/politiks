@@ -393,3 +393,26 @@ Prove the complete MVP from a clean database, harden the production package for 
 - The local database reports itself as MySQL-compatible rather than MariaDB. All schema and integration checks pass, but the exact MariaDB 10.6.18 server family must be recorded on the host.
 - The clean acceptance uses the deliberately synthetic browser reference dataset. Production still requires a freshly rebuilt, classified, checksum-verified full Swiss snapshot and successful `verify_reference_publication.php` reconciliation.
 - Backup/restore, provider permissions, and release switching cannot be proven without the host. They are explicit unchecked operational items in `MVP_CHECKLIST.md`, not silently treated as complete.
+
+## Post-MVP deployment work - Split phpMyAdmin database import
+
+### Goal
+
+Make the 363 MB production SQL dump importable through shared-host phpMyAdmin limits without breaking SQL statements or relying on session state across upload requests.
+
+### Work completed
+
+- Added a streaming splitter for plain or gzip SQL dumps. It splits only after complete statement lines, never loads the full dump into memory, refuses accidental overwrites, and emits deterministic gzip filenames plus a checksum manifest.
+- Made every part independently establish and restore character-set, time-zone, SQL-mode, unique-check, and foreign-key-check state because each phpMyAdmin upload uses a different database session.
+- Added a verifier that checks each compressed size and SHA-256, validates every wrapper and contiguous payload range, and proves that the five combined payloads reproduce the source SQL checksum.
+- Generated five ordered production artifacts of 7.36-7.73 MB each from the 362,897,689-byte SQL payload and documented safe import, restart-on-failure, and regeneration procedures.
+
+### Verification
+
+- PHP syntax checks passed for the splitter, verifier, and regression test.
+- `php tests/php/run.php`: 26 passed, 0 failed.
+- Full artifact verification covered five files and reproduced all 362,897,689 source bytes with SHA-256 `c281ae6fdde1aedc4d0dd3dc127661522a986864a77964a8c690cb0fb80f5166`.
+
+### Operational limitation
+
+- The split lowers each browser upload to under 8 MB but cannot override a provider's SQL execution-time or database-quota limits. If a host still times out, use its server-side upload directory/import facility or ask the provider to run the dump from the database command line.
