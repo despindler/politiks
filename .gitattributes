@@ -8,3 +8,7 @@
 *.py text eol=lf
 *.sql text eol=lf
 *.txt text eol=lf
+
+# Preserve official source responses byte-for-byte; manifests contain their checksums.
+source/snapshots/** -text
+source/manifests/*.jsonl text eol=lf

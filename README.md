@@ -79,16 +79,41 @@ Run both:
 npm.cmd run verify
 ```
 
-## Data workflow status
+## Source acquisition
 
-The data workflow is delivered incrementally according to `.agents/PLAN.md`:
+Acquire or safely resume the small official fixture:
 
-1. `source/` will contain raw, checksummed official Swiss Parliament responses and manifests.
-2. `database/schema.sql` and `notebooks/01_import_source_data.ipynb` will recreate the SQLite research database.
+```powershell
+.\.venv\Scripts\python.exe scripts/download_sources.py `
+  --plan source/plans/fixture.json `
+  --manifest source/manifests/fixture.jsonl
+```
+
+Validate every successful manifest row against its stored byte count, SHA256, and file format:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/validate_source_snapshot.py `
+  --manifest source/manifests/fixture.jsonl
+```
+
+Run acquisition unit tests without relying on the Parliament service:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+Observed endpoint schemas, identifiers, and coverage limitations are documented under `source/documentation/`.
+
+## Remaining data workflow
+
+The remaining workflow is delivered incrementally according to `.agents/PLAN.md`:
+
+1. `database/schema.sql` and `notebooks/01_import_source_data.ipynb` will recreate the SQLite research database.
+2. A later full-snapshot plan will expand the fixture after the Council of States source path is confirmed.
 3. A controlled publication script will transfer the application read model into MariaDB.
 4. `site/` will contain every runtime file required for Apache deployment.
 
-Acquisition, import, and publication commands will be added to this README in the milestones that implement them. They are intentionally not represented by non-functional placeholder commands.
+Import and publication commands will be added in the milestones that implement them. They are intentionally not represented by non-functional placeholders.
 
 ## Security
 

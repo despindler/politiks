@@ -7,7 +7,7 @@ This file records durable milestone status, verification, decisions, and known l
 | Milestone | Status | Completed |
 |---|---|---|
 | 0. Repository foundation and executable contracts | Complete | 2026-07-14 |
-| 1. Swiss source reconnaissance and acquisition proof | Not started | — |
+| 1. Swiss source reconnaissance and acquisition proof | Complete | 2026-07-14 |
 | 2. Country-neutral SQLite research model and import | Not started | — |
 | 3. Full Swiss snapshot and data-quality report | Not started | — |
 | 4. Auditable topic and beneficiary classification | Not started | — |
@@ -55,3 +55,36 @@ Create a safe, reproducible starting structure with documented configuration, pi
 
 - The development machine's current PHP CLI is 8.2.30 rather than the target PHP 8.4.
 - Its current CLI build does not expose the cURL, OpenSSL, or `mbstring` extensions. The environment diagnostic reports these gaps explicitly.
+
+## Milestone 1 — Swiss source reconnaissance and acquisition proof
+
+### Goal
+
+Confirm the official service's live behavior and create a small, auditable, resumable fixture before designing the database.
+
+### Work completed
+
+- Documented observed transport, content negotiation, pagination, endpoint fields, filters, identifiers, join paths, decision tokens, and discrepancies in `source/documentation/ENDPOINT_INVENTORY.md`.
+- Documented official National Council and Council of States public-access periods and the unresolved machine-readable Council of States route in `source/documentation/COVERAGE.md`.
+- Implemented a declarative acquisition-plan format and an official fixture plan.
+- Implemented rate-limited downloads with explicit timeouts, retry/backoff, a descriptive User-Agent, safe paths, sensitive-query rejection, format validation, atomic finalization, SHA256, UTC timestamps, structured logging, and resumability.
+- Implemented an append-only JSONL manifest that permits auditable error attempts but prevents duplicate successful snapshot paths.
+- Implemented independent snapshot validation and a compact official fixture containing 38 responses and 1,706,073 bytes.
+- Marked raw snapshot files as non-text in `.gitattributes` so Git cannot normalize official response bytes and invalidate manifest checksums.
+- Preserved official web/PDF documentation, service XSDs, reference lists, current and historic member metadata, affair text, summaries, eleven individual-vote events across three affairs, and per-councillor vote examples. The vote fixture includes a clearly labeled final vote and non-final questions.
+- Established that biography/CV IDs, voting councillor numbers, ELAN IDs, and individual-choice IDs are separate namespaces. Regression tests protect this distinction.
+
+### Verification
+
+- `python -m pytest -q`: 11 passed, including local-server tests for idempotency, relative-path handling, changed-request protection, source pagination, post-success 404 termination, transient retry, malformed JSON rejection/error recording, and official-fixture invariants.
+- `python -m compileall -q src scripts tests/python`: passed.
+- `scripts/validate_source_snapshot.py`: 38 files, 1,706,073 bytes, zero unresolved errors.
+- A second fixture acquisition run downloaded zero files and verified/skipped all 38 existing responses without adding duplicate success rows.
+- `npm.cmd run verify`: 3 PHP checks and 1 Playwright Chromium smoke test passed.
+
+### Known limitations and next implications
+
+- The observed `ws-old` service works through plain HTTP but returns 403 through HTTPS. Checksums protect preserved bytes after retrieval, not the network transfer.
+- The sampled vote-affair events contain 199–200 choices and no chamber field, proving National Council-scale records only.
+- Official rules confirm public Council of States individual votes from spring 2022 and narrower access from spring 2014, but the chamber-explicit machine-readable official route remains to be established before the full-snapshot milestone.
+- The Milestone 2 schema must preserve endpoint-specific ID namespaces, raw vote tokens, unknown chamber where necessary, source provenance, and dated party/faction memberships.

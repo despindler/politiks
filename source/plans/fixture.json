@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "snapshot": "fixture_2026-07-14",
+  "items": [
+    {
+      "name": "official_open_data_page",
+      "url": "https://www.parlament.ch/de/%C3%BCber-das-parlament/fakten-und-zahlen/open-data-web-services",
+      "path": "snapshots/fixture_2026-07-14/documentation/open-data-web-services.html",
+      "format": "binary"
+    },
+    {
+      "name": "official_webservice_documentation",
+      "url": "https://www.parlament.ch/centers/documents/de/kurzdokumentation-webservices-d.pdf",
+      "path": "snapshots/fixture_2026-07-14/documentation/kurzdokumentation-webservices-d.pdf",
+      "format": "pdf"
+    },
+    {
+      "name": "official_parliamentary_data_rules",
+      "url": "https://www.parlament.ch/centers/documents/de/Rahmenregeln%20Parlamentsdaten%20Website-de.pdf",
+      "path": "snapshots/fixture_2026-07-14/documentation/rahmenregeln-parlamentsdaten.pdf",
+      "format": "pdf"
+    },
+    {
+      "name": "official_voting_data_access_rules",
+      "url": "https://www.parlament.ch/centers/documents/de/Informationen%20Zugang%20Abstimmungsdaten_DE.pdf",
+      "path": "snapshots/fixture_2026-07-14/documentation/zugang-abstimmungsdaten.pdf",
+      "format": "pdf"
+    },
+    {
+      "name": "affairs_list_schema",
+      "url": "http://ws-old.parlament.ch/affairs",
+      "params": {"format": "xsd", "lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/schemas/affairs-list.xsd",
+      "format": "xml"
+    },
+    {
+      "name": "affair_detail_schema",
+      "url": "http://ws-old.parlament.ch/affairs/20150320",
+      "params": {"format": "xsd", "lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/schemas/affair-detail.xsd",
+      "format": "xml"
+    },
+    {
+      "name": "vote_affair_detail_schema",
+      "url": "http://ws-old.parlament.ch/votes/affairs/20150320",
+      "params": {"format": "xsd", "lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/schemas/vote-affair-detail.xsd",
+      "format": "xml"
+    },
+    {
+      "name": "councils",
+      "url": "http://ws-old.parlament.ch/councils",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/reference/councils.json"
+    },
+    {
+      "name": "legislative_periods",
+      "url": "http://ws-old.parlament.ch/LegislativePeriods",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/reference/legislative-periods.json"
+    },
+    {
+      "name": "sessions_page_1",
+      "url": "http://ws-old.parlament.ch/sessions",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/reference/sessions/page_000001.json"
+    },
+    {
+      "name": "cantons",
+      "url": "http://ws-old.parlament.ch/cantons",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/reference/cantons.json"
+    },
+    {
+      "name": "committees_page_1",
+      "url": "http://ws-old.parlament.ch/committees",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/reference/committees/page_000001.json"
+    },
+    {
+      "name": "factions_current",
+      "url": "http://ws-old.parlament.ch/Factions",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/reference/factions/current.json"
+    },
+    {
+      "name": "factions_historic_page_1",
+      "url": "http://ws-old.parlament.ch/Factions/historic",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/reference/factions/historic/page_000001.json"
+    },
+    {
+      "name": "parties_historic_page_1",
+      "url": "http://ws-old.parlament.ch/Parties/historic",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/reference/parties/historic/page_000001.json"
+    },
+    {
+      "name": "councillors_basic_details",
+      "url": "http://ws-old.parlament.ch/councillors/basicdetails",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/councillors/basic-details.json"
+    },
+    {
+      "name": "councillors_page_1",
+      "url": "http://ws-old.parlament.ch/councillors",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/councillors/list/page_000001.json"
+    },
+    {
+      "name": "councillors_historic_page_1",
+      "url": "http://ws-old.parlament.ch/councillors/historic",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/councillors/historic/page_000001.json"
+    },
+    {
+      "name": "councillor_thomas_aeschi",
+      "url": "http://ws-old.parlament.ch/councillors/4053",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/councillors/detail/4053.json",
+      "notes": "This biography endpoint uses the CV id 4053; his voting councillor number is 2758."
+    },
+    {
+      "name": "councillor_jacqueline_badran",
+      "url": "http://ws-old.parlament.ch/councillors/4058",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/councillors/detail/4058.json",
+      "notes": "This biography endpoint uses the CV id 4058; her voting councillor number is 2762."
+    },
+    {
+      "name": "councillor_marianne_binder_keller",
+      "url": "http://ws-old.parlament.ch/councillors/4249",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/councillors/detail/4249.json",
+      "notes": "This biography endpoint uses the CV id 4249; her voting councillor number is 3141."
+    },
+    {
+      "name": "affairs_list_first_two_pages",
+      "url": "http://ws-old.parlament.ch/affairs",
+      "params": {"lang": "de"},
+      "mode": "paginated",
+      "max_pages": 2,
+      "path_template": "snapshots/fixture_2026-07-14/affairs/list/page_{page:06d}.json"
+    },
+    {
+      "name": "affair_types",
+      "url": "http://ws-old.parlament.ch/affairs/types",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affairs/reference/types.json"
+    },
+    {
+      "name": "affair_states",
+      "url": "http://ws-old.parlament.ch/affairs/states",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affairs/reference/states.json"
+    },
+    {
+      "name": "affair_topics",
+      "url": "http://ws-old.parlament.ch/affairs/topics",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affairs/reference/topics.json"
+    },
+    {
+      "name": "affair_descriptors",
+      "url": "http://ws-old.parlament.ch/affairs/descriptors",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affairs/reference/descriptors.json"
+    },
+    {
+      "name": "affair_20120409",
+      "url": "http://ws-old.parlament.ch/affairs/20120409",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affairs/detail/20120409.json"
+    },
+    {
+      "name": "affair_20150320",
+      "url": "http://ws-old.parlament.ch/affairs/20150320",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affairs/detail/20150320.json"
+    },
+    {
+      "name": "affair_20130468",
+      "url": "http://ws-old.parlament.ch/affairs/20130468",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affairs/detail/20130468.json",
+      "notes": "Paired with a vote detail containing a clearly labeled Schlussabstimmung and non-final voting questions."
+    },
+    {
+      "name": "affair_summaries_page_1",
+      "url": "http://ws-old.parlament.ch/affairsummaries",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/affair-summaries/list/page_000001.json"
+    },
+    {
+      "name": "affair_summary_19850019",
+      "url": "http://ws-old.parlament.ch/affairsummaries/19850019",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/affair-summaries/detail/19850019.json"
+    },
+    {
+      "name": "vote_affairs_recent_page_1",
+      "url": "http://ws-old.parlament.ch/votes/affairs",
+      "params": {"lang": "de", "dateFromFilter": "2025/01/01", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/votes/affairs/list/recent_page_000001.json"
+    },
+    {
+      "name": "vote_councillors_page_1",
+      "url": "http://ws-old.parlament.ch/votes/councillors",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/votes/councillors/list/page_000001.json"
+    },
+    {
+      "name": "vote_councillor_3141_page_1",
+      "url": "http://ws-old.parlament.ch/votes/councillors/3141",
+      "params": {"lang": "de", "pageNumber": 1},
+      "path": "snapshots/fixture_2026-07-14/votes/councillors/detail/3141/page_000001.json",
+      "notes": "The documented detail spelling /votes/councilors/<ID> returned 404 during reconnaissance; the plural spelling used here returned JSON."
+    },
+    {
+      "name": "vote_affair_20120409",
+      "url": "http://ws-old.parlament.ch/votes/affairs/20120409",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/votes/affairs/detail/20120409.json"
+    },
+    {
+      "name": "vote_affair_20150320",
+      "url": "http://ws-old.parlament.ch/votes/affairs/20150320",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/votes/affairs/detail/20150320.json"
+    },
+    {
+      "name": "vote_affair_20130468",
+      "url": "http://ws-old.parlament.ch/votes/affairs/20130468",
+      "params": {"lang": "de"},
+      "path": "snapshots/fixture_2026-07-14/votes/affairs/detail/20130468.json",
+      "notes": "Contains eight events including the 2020-12-18 Schlussabstimmung."
+    }
+  ]
+}
