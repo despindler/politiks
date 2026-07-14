@@ -15,7 +15,7 @@ from politiks.swiss_xlsx import normalized_name, parse_workbook
 
 SOURCE_SYSTEM = "swiss_parliament_legacy_webservice"
 XLSX_SOURCE_SYSTEM = "swiss_parliament_session_xlsx"
-SCHEMA_VERSION = "3.0.0"
+SCHEMA_VERSION = "4.0.0"
 
 
 def _date(value: Any) -> str | None:

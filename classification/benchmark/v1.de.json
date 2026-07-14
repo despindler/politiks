@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "language": "de",
+  "cases": [
+    {
+      "id": "clear_tax_large_company",
+      "kind": "clear",
+      "text": "Steuersenkung für Grossunternehmen.",
+      "required_rule_ids": ["topic_tax", "group_large_companies", "mechanism_tax_decrease", "benefit_large_companies_explicit"],
+      "forbidden_relationships": []
+    },
+    {
+      "id": "clear_social_cost",
+      "kind": "clear",
+      "text": "Kürzung der Sozialhilfe für einkommensschwache Haushalte.",
+      "required_rule_ids": ["topic_social", "group_low_income", "mechanism_transfer_decrease", "cost_low_income_explicit"],
+      "forbidden_relationships": []
+    },
+    {
+      "id": "procedural_no_forced_effect",
+      "kind": "procedural",
+      "text": "Ordnungsantrag: Rückweisung an die Kommission und Wiederholung der Abstimmung.",
+      "required_rule_ids": [],
+      "forbidden_relationships": ["beneficiary", "cost_bearer", "mechanism"]
+    },
+    {
+      "id": "ambiguous_no_forced_effect",
+      "kind": "ambiguous",
+      "text": "Änderung des Bundesgesetzes; Differenz zum Beschluss des Ständerates.",
+      "required_rule_ids": [],
+      "forbidden_relationships": ["beneficiary", "cost_bearer", "mechanism"]
+    },
+    {
+      "id": "mixed_explicit_effects",
+      "kind": "mixed",
+      "text": "Erhöhung der Prämienverbilligung für einkommensschwache Haushalte, finanziert durch höhere Steuern für Steuerzahlende.",
+      "required_rule_ids": ["topic_tax", "group_low_income", "group_taxpayers", "mechanism_transfer_increase", "benefit_low_income_transfer", "cost_taxpayers_explicit"],
+      "forbidden_relationships": []
+    }
+  ]
+}

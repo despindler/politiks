@@ -142,12 +142,23 @@ Remove-Item Env:POLITIKS_SOURCE_MANIFEST
 
 The full quality assessment, including exact historical boundaries, semantic gaps, membership gaps, duplicates, and aggregate anomalies, is in `source/documentation/DATA_QUALITY_FULL_2026-07-14.md`.
 
+## Classification and vote search
+
+After recreating the research database, create auditable pending suggestions and rebuild exact/full-text vote search offline:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/classify_research_database.py
+.\.venv\Scripts\python.exe scripts/evaluate_classification_benchmark.py
+```
+
+The taxonomy, transparent rules, controlled human-review format, optional provider-neutral model interface, queue-export command, and benchmark limitations are documented in `classification/README.md` and `classification/BENCHMARK_REPORT.md`. Automated suggestions are never exposed through the reviewed publication view until a human accepts or edits them.
+
 ## Remaining data workflow
 
 The remaining workflow is delivered incrementally according to `.agents/PLAN.md`:
 
-1. Auditable topic/beneficiary classification will build on the full research snapshot while keeping derived suggestions separate from official facts.
-2. A controlled publication script will transfer the application read model into MariaDB.
+1. A controlled publication script will transfer the application read model into MariaDB.
+2. The PHP shell and Google authentication will establish the deployable runtime boundary.
 3. `site/` will contain every runtime file required for Apache deployment.
 
 Import and publication commands will be added in the milestones that implement them. They are intentionally not represented by non-functional placeholders.

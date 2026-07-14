@@ -20,6 +20,9 @@ __pycache__/
 .pytest_cache/
 .coverage
 
+# Local classification review work queues
+classification/review-queue*.jsonl
+
 # Node and Playwright
 node_modules/
 playwright-report/

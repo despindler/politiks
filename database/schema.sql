@@ -378,6 +378,163 @@ CREATE TABLE voting_choice (
     UNIQUE (voting_event_id, person_id)
 );
 
+-- Auditable derived classification -----------------------------------------
+
+CREATE TABLE taxonomy_version (
+    id INTEGER PRIMARY KEY,
+    version TEXT NOT NULL UNIQUE,
+    language TEXT NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('draft', 'active', 'retired')),
+    definition_sha256 TEXT NOT NULL CHECK (length(definition_sha256) = 64),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE taxonomy_term (
+    id INTEGER PRIMARY KEY,
+    taxonomy_version_id INTEGER NOT NULL REFERENCES taxonomy_version(id) ON DELETE CASCADE,
+    dimension TEXT NOT NULL CHECK (dimension IN ('policy_topic', 'affected_group', 'effect_mechanism')),
+    code TEXT NOT NULL,
+    parent_code TEXT,
+    name_de TEXT NOT NULL,
+    description_de TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (taxonomy_version_id, dimension, code)
+);
+
+CREATE TABLE classification_run (
+    id INTEGER PRIMARY KEY,
+    run_key TEXT NOT NULL UNIQUE,
+    taxonomy_version_id INTEGER NOT NULL REFERENCES taxonomy_version(id),
+    source_snapshot TEXT NOT NULL,
+    method TEXT NOT NULL CHECK (method IN ('deterministic', 'model')),
+    ruleset_version TEXT,
+    ruleset_sha256 TEXT CHECK (ruleset_sha256 IS NULL OR length(ruleset_sha256) = 64),
+    provider TEXT,
+    model TEXT,
+    configuration_json TEXT NOT NULL,
+    prompt_version TEXT,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+    CHECK (
+        (method = 'deterministic' AND ruleset_version IS NOT NULL AND ruleset_sha256 IS NOT NULL
+         AND provider IS NULL AND model IS NULL AND prompt_version IS NULL) OR
+        (method = 'model' AND ruleset_version IS NULL AND ruleset_sha256 IS NULL
+         AND provider IS NOT NULL AND model IS NOT NULL AND prompt_version IS NOT NULL)
+    )
+);
+
+CREATE TABLE classification_suggestion (
+    id INTEGER PRIMARY KEY,
+    suggestion_key TEXT NOT NULL UNIQUE,
+    classification_run_id INTEGER NOT NULL REFERENCES classification_run(id) ON DELETE CASCADE,
+    target_kind TEXT NOT NULL CHECK (target_kind IN ('matter', 'voting_event')),
+    matter_id INTEGER REFERENCES parliamentary_matter(id) ON DELETE CASCADE,
+    voting_event_id INTEGER REFERENCES voting_event(id) ON DELETE CASCADE,
+    taxonomy_term_id INTEGER NOT NULL REFERENCES taxonomy_term(id),
+    relationship TEXT NOT NULL CHECK (relationship IN ('topic', 'affected', 'beneficiary', 'cost_bearer', 'mechanism')),
+    effect_direction TEXT NOT NULL CHECK (effect_direction IN ('benefit', 'cost', 'increase', 'decrease', 'mixed', 'unclear', 'not_applicable')),
+    directness TEXT NOT NULL CHECK (directness IN ('direct', 'indirect', 'claimed', 'mixed', 'unclear', 'not_applicable')),
+    confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+    evidence_field TEXT NOT NULL,
+    evidence_passage TEXT NOT NULL,
+    rule_id TEXT,
+    source_record_id INTEGER REFERENCES source_record(id),
+    CHECK (
+        (target_kind = 'matter' AND matter_id IS NOT NULL AND voting_event_id IS NULL) OR
+        (target_kind = 'voting_event' AND matter_id IS NULL AND voting_event_id IS NOT NULL)
+    )
+);
+
+CREATE TABLE classification_review (
+    id INTEGER PRIMARY KEY,
+    classification_suggestion_id INTEGER NOT NULL REFERENCES classification_suggestion(id) ON DELETE CASCADE,
+    revision INTEGER NOT NULL CHECK (revision >= 1),
+    decision TEXT NOT NULL CHECK (decision IN ('accepted', 'edited', 'rejected')),
+    replacement_taxonomy_term_id INTEGER REFERENCES taxonomy_term(id),
+    replacement_relationship TEXT CHECK (replacement_relationship IN ('topic', 'affected', 'beneficiary', 'cost_bearer', 'mechanism')),
+    replacement_effect_direction TEXT CHECK (replacement_effect_direction IN ('benefit', 'cost', 'increase', 'decrease', 'mixed', 'unclear', 'not_applicable')),
+    replacement_directness TEXT CHECK (replacement_directness IN ('direct', 'indirect', 'claimed', 'mixed', 'unclear', 'not_applicable')),
+    reviewer TEXT NOT NULL,
+    reviewed_at TEXT NOT NULL,
+    notes TEXT,
+    review_record_sha256 TEXT NOT NULL CHECK (length(review_record_sha256) = 64),
+    review_file_sha256 TEXT NOT NULL CHECK (length(review_file_sha256) = 64),
+    CHECK (
+        (decision = 'edited' AND replacement_taxonomy_term_id IS NOT NULL
+         AND replacement_relationship IS NOT NULL AND replacement_effect_direction IS NOT NULL
+         AND replacement_directness IS NOT NULL) OR
+        (decision != 'edited' AND replacement_taxonomy_term_id IS NULL
+         AND replacement_relationship IS NULL AND replacement_effect_direction IS NULL
+         AND replacement_directness IS NULL)
+    ),
+    UNIQUE (classification_suggestion_id, revision)
+);
+
+CREATE VIEW reviewed_classification AS
+WITH latest_review AS (
+    SELECT review.*
+    FROM classification_review review
+    JOIN (
+        SELECT classification_suggestion_id, MAX(revision) AS revision
+        FROM classification_review
+        GROUP BY classification_suggestion_id
+    ) latest
+      ON latest.classification_suggestion_id = review.classification_suggestion_id
+     AND latest.revision = review.revision
+)
+SELECT
+    suggestion.suggestion_key,
+    suggestion.classification_run_id,
+    run.source_snapshot,
+    run.method AS classification_method,
+    term.taxonomy_version_id,
+    suggestion.target_kind,
+    suggestion.matter_id,
+    suggestion.voting_event_id,
+    COALESCE(review.replacement_taxonomy_term_id, suggestion.taxonomy_term_id) AS taxonomy_term_id,
+    COALESCE(review.replacement_relationship, suggestion.relationship) AS relationship,
+    COALESCE(review.replacement_effect_direction, suggestion.effect_direction) AS effect_direction,
+    COALESCE(review.replacement_directness, suggestion.directness) AS directness,
+    suggestion.evidence_field,
+    suggestion.evidence_passage,
+    suggestion.confidence,
+    review.reviewer,
+    review.reviewed_at,
+    review.decision,
+    review.notes
+FROM classification_suggestion suggestion
+JOIN latest_review review ON review.classification_suggestion_id = suggestion.id
+JOIN classification_run run ON run.id=suggestion.classification_run_id
+JOIN taxonomy_term term
+  ON term.id=COALESCE(review.replacement_taxonomy_term_id, suggestion.taxonomy_term_id)
+WHERE review.decision IN ('accepted', 'edited');
+
+-- Rebuildable search projection. Exact identifiers are indexed separately
+-- from full text so known votes never depend on classification or ranking.
+CREATE TABLE voting_event_search_document (
+    voting_event_id INTEGER PRIMARY KEY REFERENCES voting_event(id) ON DELETE CASCADE,
+    affair_identifier TEXT,
+    affair_source_identifier TEXT,
+    voting_identifier TEXT NOT NULL,
+    registration_number TEXT,
+    occurred_on TEXT NOT NULL,
+    title TEXT,
+    exact_question TEXT,
+    meaning_yes TEXT,
+    meaning_no TEXT,
+    official_metadata TEXT NOT NULL,
+    reviewed_classifications TEXT NOT NULL,
+    full_text TEXT NOT NULL
+);
+
+CREATE VIRTUAL TABLE voting_event_search_fts USING fts5(
+    voting_event_id UNINDEXED,
+    full_text,
+    tokenize = 'unicode61 remove_diacritics 2'
+);
+
 CREATE INDEX idx_source_record_kind ON source_record(record_kind, source_identifier);
 CREATE INDEX idx_person_identifier_person ON person_identifier(person_id);
 CREATE INDEX idx_mandate_person_dates ON person_mandate(person_id, date_from, date_to);
@@ -388,3 +545,12 @@ CREATE INDEX idx_voting_event_matter_date ON voting_event(matter_id, occurred_at
 CREATE INDEX idx_voting_event_chamber_date ON voting_event(chamber_id, occurred_at);
 CREATE INDEX idx_voting_choice_event_choice ON voting_choice(voting_event_id, normalized_choice);
 CREATE INDEX idx_voting_choice_person ON voting_choice(person_id);
+CREATE INDEX idx_taxonomy_term_lookup ON taxonomy_term(taxonomy_version_id, dimension, code);
+CREATE INDEX idx_classification_suggestion_target ON classification_suggestion(target_kind, matter_id, voting_event_id);
+CREATE INDEX idx_classification_suggestion_term ON classification_suggestion(taxonomy_term_id, relationship);
+CREATE INDEX idx_classification_review_suggestion ON classification_review(classification_suggestion_id, revision);
+CREATE INDEX idx_vote_search_affair_identifier ON voting_event_search_document(affair_identifier);
+CREATE INDEX idx_vote_search_affair_source_identifier ON voting_event_search_document(affair_source_identifier);
+CREATE INDEX idx_vote_search_voting_identifier ON voting_event_search_document(voting_identifier);
+CREATE INDEX idx_vote_search_registration ON voting_event_search_document(registration_number);
+CREATE INDEX idx_vote_search_date ON voting_event_search_document(occurred_on);

@@ -10,7 +10,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 1. Swiss source reconnaissance and acquisition proof | Complete | 2026-07-14 |
 | 2. Country-neutral SQLite research model and import | Complete | 2026-07-14 |
 | 3. Full Swiss snapshot and data-quality report | Complete | 2026-07-14 |
-| 4. Auditable topic and beneficiary classification | Not started | — |
+| 4. Auditable topic and beneficiary classification | Complete | 2026-07-14 |
 | 5. MariaDB schema and deterministic publication | Not started | — |
 | 6. PHP shell, security baseline, and Google authentication | Not started | — |
 | 7. Public catalogue and personal insight management | Not started | — |
@@ -152,3 +152,37 @@ Acquire and reproducibly import the practical chamber-explicit historical scope 
 - 39,445 choices (1.02%) lack a date-valid party interval and 120 lack a date-valid faction interval; no current membership is projected backward to fill them.
 - Official aggregate/member matrices differ in 179 National Council events across five workbooks. Nineteen 2023 rows contain doubled published aggregates; ambiguous 2014 blank cells are not assigned to individual people. Raw aggregates and explicit choices remain separate.
 - National Council 2003–2011 and the narrower 1996–2003 public scope need another official adapter. Council of States 2014–2021 requires Official Bulletin protocol extraction.
+
+## Milestone 4 — Auditable topic and beneficiary classification
+
+### Goal
+
+Add a reproducible discovery layer while keeping official facts, pending deterministic/model suggestions, human review decisions, reviewed classifications, and user interpretations structurally separate.
+
+### Work completed
+
+- Added the versioned German taxonomy `1.0.0` for 18 policy topics, 16 affected groups, six effect mechanisms, effect direction, directness, and review status.
+- Added transparent German rule definitions that create source-passage-backed pending suggestions. Named groups default to `affected` with unclear effect; beneficiary/cost-bearer roles require explicit wording.
+- Added schema tables for immutable taxonomy checksums, classification-run configuration/provenance, stable pending suggestions, append-only review revisions, and source-linked evidence.
+- Added the `reviewed_classification` view, which exposes only the latest accepted/edited decision and includes source snapshot, taxonomy version, method, reviewer, and evidence. Pending/rejected suggestions cannot enter this surface.
+- Added a provider-neutral optional model interface that records provider, model, prompt version, configuration, confidence, and a passage verified against its source field. It cannot create review rows.
+- Added a controlled JSONL review workflow with accepted/edited/rejected decisions, strict sequential revisions, record/file checksums, and collision detection.
+- Added a bounded provenance-rich review-queue exporter.
+- Added a rebuildable vote-search projection with ordinary indexes for canonical/display affair IDs, vote IDs, registration numbers, and dates, plus FTS5 over titles, exact questions, Yes/No meanings, official text/metadata, and reviewed labels.
+- Added a labeled German benchmark with clear, procedural, ambiguous, and mixed-effect cases plus a report of known error modes.
+
+### Verification
+
+- `python -m pytest`: 24 passed, including deterministic idempotency, review history, reviewed-only publication, fake-provider provenance, source-evidence validation, and exact/full-text search.
+- `scripts/evaluate_classification_benchmark.py`: 5 of 5 cases passed; procedural and ambiguous cases received no forced benefit, cost, or mechanism.
+- Full run: 21,569 targets, 10,111 pending suggestions (9,301 topic, 803 unclear affected-group, six mechanism, one explicit beneficiary), zero reviewed labels, and 21,569 search documents.
+- Two consecutive full classification runs returned the same run key and logical counts.
+- Canonical affair ID `20214377`, chamber vote ID `NR:27660`, registration `32381`, date, German umlaut text, and ordinary full text all returned direct/search results independently of reviewed classification.
+- Full generated database retained zero foreign-key violations.
+
+### Known limitations and next implications
+
+- The benchmark is synthetic and too small to estimate precision/recall. Reviewed real examples and disagreement notes should expand it over time.
+- German rules miss multilingual terms, synonyms, negation, legal context, and indirect/distributional effects. Topic labels do not establish whether Yes supports the overall affair.
+- Full per-affair text/topic enrichment remains absent, so the first pass mainly uses event titles, questions, and semantics. Every suggestion records the field/passages actually used.
+- No real suggestion is marked reviewed in the committed review file. This is intentional: publication begins only after an identified reviewer evaluates source evidence.

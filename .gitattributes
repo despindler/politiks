@@ -2,6 +2,7 @@
 
 *.md text eol=lf
 *.json text eol=lf
+*.jsonl text eol=lf
 *.js text eol=lf
 *.cjs text eol=lf
 *.php text eol=lf
@@ -11,4 +12,3 @@
 
 # Preserve official source responses byte-for-byte; manifests contain their checksums.
 source/snapshots/** -text
-source/manifests/*.jsonl text eol=lf

@@ -1,0 +1,84 @@
+{
+  "version": "1.0.0",
+  "language": "de",
+  "title": "Politiks Klassifikation Schweiz",
+  "status": "active",
+  "created_at": "2026-07-14T00:00:00Z",
+  "principles": [
+    "Themen, betroffene Gruppen und Wirkungsmechanismen sind getrennte Dimensionen.",
+    "Automatische Treffer sind Vorschläge und werden erst nach menschlicher Prüfung veröffentlicht.",
+    "Begünstigte und Kostentragende werden nur bei expliziter sprachlicher Evidenz vorgeschlagen.",
+    "Mehrdeutige, gemischte und indirekte Wirkungen bleiben entsprechend gekennzeichnet."
+  ],
+  "dimensions": {
+    "policy_topic": [
+      {"code": "public_finance_tax", "name_de": "Öffentliche Finanzen und Steuern", "description_de": "Steuern, Abgaben, Budget, Staatsausgaben und Finanzhaushalt."},
+      {"code": "social_security", "name_de": "Soziale Sicherheit", "description_de": "AHV, IV, Arbeitslosenversicherung, Sozialhilfe, Ergänzungsleistungen und Vorsorge."},
+      {"code": "health", "name_de": "Gesundheit", "description_de": "Gesundheitsversorgung, Krankenversicherung, Prävention, Medikamente und Pflege."},
+      {"code": "economy_competition", "name_de": "Wirtschaft und Wettbewerb", "description_de": "Unternehmen, Wettbewerb, Handel, Konjunktur und wirtschaftliche Rahmenbedingungen."},
+      {"code": "labor", "name_de": "Arbeit", "description_de": "Arbeitsrecht, Löhne, Arbeitsbedingungen und Arbeitsmarkt."},
+      {"code": "education_research", "name_de": "Bildung und Forschung", "description_de": "Schulen, Berufsbildung, Hochschulen, Forschung und Wissenschaft."},
+      {"code": "environment_climate", "name_de": "Umwelt und Klima", "description_de": "Klima, Umwelt-, Natur- und Ressourcenschutz."},
+      {"code": "energy", "name_de": "Energie", "description_de": "Strom, Energieversorgung, erneuerbare und fossile Energieträger."},
+      {"code": "transport", "name_de": "Verkehr", "description_de": "Strasse, Schiene, öffentlicher Verkehr, Luftfahrt und Mobilität."},
+      {"code": "housing", "name_de": "Wohnen und Miete", "description_de": "Mietrecht, Wohnraum, Wohnbauförderung und Wohneigentum."},
+      {"code": "migration_asylum", "name_de": "Migration und Asyl", "description_de": "Migration, Asyl, Aufenthalt, Integration und Einbürgerung."},
+      {"code": "security_defence", "name_de": "Sicherheit und Verteidigung", "description_de": "Armee, Bevölkerungsschutz, Polizei, Nachrichtendienst und innere Sicherheit."},
+      {"code": "foreign_europe", "name_de": "Aussenpolitik und Europa", "description_de": "Internationale Beziehungen, Entwicklungszusammenarbeit und Europapolitik."},
+      {"code": "agriculture_food", "name_de": "Landwirtschaft und Ernährung", "description_de": "Landwirtschaft, Ernährungssysteme, Tierhaltung und Agrarpolitik."},
+      {"code": "family_equality", "name_de": "Familie und Gleichstellung", "description_de": "Familienpolitik, Betreuung, Gleichstellung und Vereinbarkeit."},
+      {"code": "digital_media", "name_de": "Digitalisierung und Medien", "description_de": "Digitale Infrastruktur, Datenschutz, Plattformen, Medien und Kommunikation."},
+      {"code": "justice_rights", "name_de": "Justiz und Grundrechte", "description_de": "Zivil- und Strafrecht, Gerichte, Verfahrensrecht und Grundrechte."},
+      {"code": "institutions_democracy", "name_de": "Institutionen und Demokratie", "description_de": "Parlamentarische Verfahren, politische Rechte, Föderalismus und staatliche Organisation."}
+    ],
+    "affected_group": [
+      {"code": "low_income_households", "name_de": "Haushalte mit tiefem Einkommen", "description_de": "Personen und Haushalte mit tiefem Einkommen oder Sozialhilfebezug."},
+      {"code": "middle_income_households", "name_de": "Haushalte mit mittlerem Einkommen", "description_de": "Mittlere Einkommen und der ausdrücklich so bezeichnete Mittelstand."},
+      {"code": "employees", "name_de": "Arbeitnehmende", "description_de": "Beschäftigte und Lohnabhängige."},
+      {"code": "pensioners", "name_de": "Rentnerinnen und Rentner", "description_de": "Personen im Rentenalter und Rentenbeziehende."},
+      {"code": "families", "name_de": "Familien", "description_de": "Familien, Eltern und betreuende Angehörige."},
+      {"code": "students", "name_de": "Lernende und Studierende", "description_de": "Schülerinnen, Lernende und Studierende."},
+      {"code": "researchers", "name_de": "Forschende und Wissenschaft", "description_de": "Forschende, wissenschaftliches Personal und Forschungseinrichtungen."},
+      {"code": "smes", "name_de": "KMU", "description_de": "Kleine und mittlere Unternehmen."},
+      {"code": "large_companies", "name_de": "Grossunternehmen", "description_de": "Grosse Unternehmen und ausdrücklich genannte Konzerne."},
+      {"code": "patients", "name_de": "Patientinnen und Patienten", "description_de": "Patientinnen, Patienten und Versicherte als Leistungsbeziehende."},
+      {"code": "healthcare_providers", "name_de": "Gesundheitsdienstleister", "description_de": "Spitäler, Ärzteschaft, Pflege und weitere Leistungserbringer."},
+      {"code": "farmers", "name_de": "Landwirtschaftsbetriebe", "description_de": "Bäuerinnen, Bauern und Landwirtschaftsbetriebe."},
+      {"code": "cantons", "name_de": "Kantone", "description_de": "Kantone und kantonale Behörden oder Haushalte."},
+      {"code": "municipalities", "name_de": "Gemeinden", "description_de": "Gemeinden und kommunale Behörden oder Haushalte."},
+      {"code": "taxpayers", "name_de": "Steuerzahlende", "description_de": "Steuerzahlende, sofern sie im Text ausdrücklich als Gruppe erscheinen."},
+      {"code": "consumers", "name_de": "Konsumentinnen und Konsumenten", "description_de": "Konsumierende und Kundschaft."}
+    ],
+    "effect_mechanism": [
+      {"code": "tax_change", "name_de": "Steuer- oder Abgabenänderung", "description_de": "Änderung eines Steuersatzes, einer Abgabe, eines Abzugs oder einer Steuerpflicht."},
+      {"code": "transfer_change", "name_de": "Transferänderung", "description_de": "Änderung einer Rente, Zulage, Subvention oder sonstigen Geldleistung."},
+      {"code": "eligibility_change", "name_de": "Änderung der Anspruchsberechtigung", "description_de": "Ausweitung oder Einschränkung des Zugangs zu Leistungen oder Rechten."},
+      {"code": "regulation_change", "name_de": "Regulierungsänderung", "description_de": "Einführung, Lockerung, Verschärfung oder Aufhebung einer Regulierung."},
+      {"code": "public_spending", "name_de": "Öffentliche Ausgabe", "description_de": "Bewilligung, Erhöhung, Kürzung oder Verlagerung öffentlicher Ausgaben."},
+      {"code": "service_change", "name_de": "Änderung öffentlicher Leistungen", "description_de": "Ausbau, Einschränkung oder Umgestaltung einer öffentlichen Leistung."}
+    ]
+  },
+  "effect_directions": [
+    {"code": "benefit", "name_de": "Vorteil/Begünstigung"},
+    {"code": "cost", "name_de": "Kosten/Belastung"},
+    {"code": "increase", "name_de": "Erhöhung/Ausweitung"},
+    {"code": "decrease", "name_de": "Senkung/Einschränkung"},
+    {"code": "mixed", "name_de": "Gemischt"},
+    {"code": "unclear", "name_de": "Unklar"},
+    {"code": "not_applicable", "name_de": "Nicht anwendbar"}
+  ],
+  "directness": [
+    {"code": "direct", "name_de": "Direkt"},
+    {"code": "indirect", "name_de": "Indirekt"},
+    {"code": "claimed", "name_de": "Behauptete Wirkung"},
+    {"code": "mixed", "name_de": "Gemischt"},
+    {"code": "unclear", "name_de": "Unklar"},
+    {"code": "not_applicable", "name_de": "Nicht anwendbar"}
+  ],
+  "review_statuses": [
+    {"code": "pending", "name_de": "Ungeprüft"},
+    {"code": "accepted", "name_de": "Akzeptiert"},
+    {"code": "edited", "name_de": "Bearbeitet"},
+    {"code": "rejected", "name_de": "Abgelehnt"}
+  ]
+}
