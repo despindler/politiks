@@ -169,9 +169,8 @@
     card.append(label, element('h3', 'h5', insight.title || 'Unbenannter Insight'));
     card.append(element('p', 'text-body-secondary small flex-grow-1', insight.claim_text || 'Noch keine Aussage erfasst.'));
     const summary = element('p', 'small text-body-secondary', `${insight.member_count} Mitglieder · ${insight.evidence_count} Abstimmungen`);
-    const edit = element('button', 'btn btn-outline-secondary w-100', 'Bearbeiten');
-    edit.type = 'button';
-    edit.addEventListener('click', () => openEditor(insight));
+    const edit = element('a', 'btn btn-outline-secondary w-100', 'Im Assistenten bearbeiten');
+    edit.href = `/insights/${insight.public_id}/bearbeiten`;
     card.append(summary, edit);
     column.append(card);
     return column;
@@ -215,8 +214,7 @@
     button.disabled = true;
     try {
       const payload = await api('/api/insights', { method: 'POST', body: '{}' });
-      await loadMine();
-      openEditor(payload.insight);
+      location.href = `/insights/${payload.insight.public_id}/bearbeiten`;
     } catch (error) { setStatus('[data-mine-status]', error.message, 'bi-exclamation-triangle'); }
     finally { button.disabled = false; }
   }

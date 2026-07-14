@@ -8,6 +8,7 @@ use Politiks\App\Auth\AuthService;
 use Politiks\App\Auth\GoogleAuthException;
 use Politiks\App\Insight\InsightException;
 use Politiks\App\Insight\InsightStore;
+use Politiks\App\Insight\WizardStore;
 use Politiks\App\Security\Csrf;
 use Throwable;
 
@@ -18,6 +19,7 @@ final class Application
         private readonly AuthService $auth,
         private readonly Csrf $csrf,
         private readonly InsightStore $insights,
+        private readonly WizardStore $wizard,
     ) {
     }
 
@@ -42,6 +44,15 @@ final class Application
                 header('Cache-Control: no-store');
                 header('X-Robots-Tag: noindex, nofollow');
                 echo HomePage::render(true);
+                exit;
+            }
+            if ($method === 'GET' && preg_match('~^/insights/([a-f0-9]{26})/bearbeiten$~', $path, $matches) === 1) {
+                $user = $this->requireUser();
+                $this->wizard->state($user['id'], $matches[1]);
+                header('Content-Type: text/html; charset=utf-8');
+                header('Cache-Control: no-store');
+                header('X-Robots-Tag: noindex, nofollow');
+                echo WizardPage::render($matches[1]);
                 exit;
             }
             if ($method === 'GET' && $path === '/api/auth-config') {
@@ -86,6 +97,39 @@ final class Application
                 $this->requireCsrf();
                 $user = $this->requireUser();
                 Http::json(['ok' => true, 'insight' => $this->insights->createDraft($user['id'])], 201);
+            }
+            if ($method === 'GET' && preg_match('~^/api/insights/([a-f0-9]{26})/wizard$~', $path, $matches) === 1) {
+                $user = $this->requireUser();
+                Http::json(['ok' => true] + $this->wizard->state($user['id'], $matches[1]));
+            }
+            if ($method === 'PUT' && preg_match('~^/api/insights/([a-f0-9]{26})/scope$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                Http::json(['ok' => true, 'scope' => $this->wizard->saveScope($user['id'], $matches[1], Http::jsonBody())]);
+            }
+            if ($method === 'GET' && preg_match('~^/api/insights/([a-f0-9]{26})/members$~', $path, $matches) === 1) {
+                $user = $this->requireUser();
+                Http::json(['ok' => true, 'items' => $this->wizard->eligibleMembers($user['id'], $matches[1])]);
+            }
+            if ($method === 'PUT' && preg_match('~^/api/insights/([a-f0-9]{26})/members$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                $body = Http::jsonBody();
+                Http::json(['ok' => true, 'member_ids' => $this->wizard->saveMembers($user['id'], $matches[1], $body['member_ids'] ?? null)]);
+            }
+            if ($method === 'PUT' && preg_match('~^/api/insights/([a-f0-9]{26})/evidence$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                $body = Http::jsonBody();
+                Http::json(['ok' => true, 'evidence_ids' => $this->wizard->saveEvidence($user['id'], $matches[1], $body['evidence_ids'] ?? null)]);
+            }
+            if ($method === 'POST' && preg_match('~^/api/insights/([a-f0-9]{26})/votes$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                $body = Http::jsonBody();
+                Http::json(['ok' => true] + $this->wizard->votes(
+                    $user['id'], $matches[1], $body['member_ids'] ?? null, $body['query'] ?? ''
+                ));
             }
             if ($method === 'GET' && preg_match('~^/api/insights/([a-f0-9]{26})$~', $path, $matches) === 1) {
                 $user = $this->auth->currentUser();

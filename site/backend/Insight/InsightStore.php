@@ -145,6 +145,50 @@ final class InsightStore
                 'Für eine Veröffentlichung sind Titel und Aussage erforderlich.',
             );
         }
+        if ($visibility === 'public') {
+            foreach (['country_source_id', 'legislature_source_id', 'chamber_source_id', 'party_source_id', 'period_from', 'period_to'] as $field) {
+                if ($current[$field] === null) {
+                    throw new InsightException(
+                        'PUBLICATION_INCOMPLETE',
+                        'Für eine Veröffentlichung ist ein vollständiger parlamentarischer Rahmen erforderlich.',
+                    );
+                }
+            }
+            $counts = $connection->prepare(
+                'SELECT
+                   (SELECT COUNT(*) FROM insight_member WHERE insight_id=?) member_count,
+                   (SELECT COUNT(*) FROM insight_vote_evidence WHERE insight_id=?) evidence_count,
+                   (SELECT COUNT(DISTINCT evidence.voting_event_source_id)
+                    FROM insight_vote_evidence evidence
+                    JOIN insight_member member ON member.insight_id=evidence.insight_id
+                    JOIN ref_voting_event event ON event.publication_id=evidence.reference_publication_id
+                      AND event.source_id=evidence.voting_event_source_id
+                    JOIN ref_voting_choice choice ON choice.publication_id=evidence.reference_publication_id
+                      AND choice.voting_event_source_id=evidence.voting_event_source_id
+                      AND choice.person_source_id=member.person_source_id
+                      AND choice.normalized_choice<>\'not_participating\'
+                    JOIN ref_person_mandate mandate ON mandate.publication_id=evidence.reference_publication_id
+                      AND mandate.person_source_id=member.person_source_id
+                      AND mandate.chamber_source_id=event.chamber_source_id
+                      AND COALESCE(mandate.date_from, \'0001-01-01\')<=DATE(event.occurred_at)
+                      AND COALESCE(mandate.date_to, \'9999-12-31\')>=DATE(event.occurred_at)
+                    WHERE evidence.insight_id=?) participating_evidence_count'
+            );
+            $counts->execute([$current['id'], $current['id'], $current['id']]);
+            $publicationCounts = $counts->fetch();
+            if ((int) $publicationCounts['member_count'] === 0 || (int) $publicationCounts['evidence_count'] === 0) {
+                throw new InsightException(
+                    'PUBLICATION_INCOMPLETE',
+                    'Wähle für eine Veröffentlichung mindestens ein Mitglied und eine Abstimmung aus.',
+                );
+            }
+            if ((int) $publicationCounts['participating_evidence_count'] !== (int) $publicationCounts['evidence_count']) {
+                throw new InsightException(
+                    'EVIDENCE_WITHOUT_PARTICIPATION',
+                    'Mindestens eine ausgewählte Abstimmung hat keine aufgezeichnete Teilnahme im aktuellen Mitgliederkreis.',
+                );
+            }
+        }
 
         $shareToken = null;
         $shareHash = $current['share_token_hash'];

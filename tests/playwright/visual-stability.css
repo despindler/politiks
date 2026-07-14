@@ -2,6 +2,10 @@
   position: static !important;
 }
 
+.evidence-tray {
+  position: static !important;
+}
+
 * {
   caret-color: transparent !important;
 }

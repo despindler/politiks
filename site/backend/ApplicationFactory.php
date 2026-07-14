@@ -13,6 +13,7 @@ use Politiks\App\Auth\TestGoogleTokenVerifier;
 use Politiks\App\Security\Csrf;
 use Politiks\App\Security\NativeSession;
 use Politiks\App\Insight\InsightStore;
+use Politiks\App\Insight\WizardStore;
 
 final class ApplicationFactory
 {
@@ -37,6 +38,7 @@ final class ApplicationFactory
             new AuthService($verifier, $users, $session),
             new Csrf($session),
             new InsightStore($database->connection(...), $config->appUrl),
+            new WizardStore($database->connection(...)),
         );
     }
 }

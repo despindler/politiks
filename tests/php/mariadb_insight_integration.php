@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 use Politiks\App\Insight\InsightException;
 use Politiks\App\Insight\InsightStore;
+use Politiks\App\Insight\WizardStore;
 use Politiks\Tooling\Environment;
 use Politiks\Tooling\MariaDb;
 
 require __DIR__ . '/../../scripts/lib/Environment.php';
 require __DIR__ . '/../../scripts/lib/MariaDb.php';
 require __DIR__ . '/../../site/backend/bootstrap.php';
+require __DIR__ . '/TestReferenceFixture.php';
 
 $emails = ['insight.owner@example.test', 'insight.other@example.test'];
 
 try {
     $pdo = MariaDb::connect(Environment::load(dirname(__DIR__, 2) . '/.env.test'));
+    ensureWizardReferenceFixture($pdo);
     $publication = $pdo->query('SELECT active_publication_id FROM reference_state WHERE singleton_id=1')->fetchColumn();
     if ($publication === false || $publication === null) {
         throw new RuntimeException('Insight integration requires an active reference publication.');
@@ -39,6 +42,7 @@ try {
     $otherId = (int) $pdo->lastInsertId();
 
     $store = new InsightStore(static fn (): PDO => $pdo, 'https://politiks.example.test');
+    $wizard = new WizardStore(static fn (): PDO => $pdo);
     $draft = $store->createDraft($ownerId);
     if ($draft['visibility'] !== 'draft' || $store->findVisible($draft['public_id'], $otherId) !== null) {
         throw new RuntimeException('Draft visibility isolation failed.');
@@ -55,6 +59,16 @@ try {
     if ($store->findShared($token) === null || $store->publicPage(1, 24)['pagination']['total'] < 0) {
         throw new RuntimeException('Unlisted share lookup failed.');
     }
+    $wizard->saveScope($ownerId, $draft['public_id'], [
+        'country_id' => 910001,
+        'legislature_id' => 910002,
+        'chamber_id' => 910003,
+        'party_id' => 910004,
+        'period_from' => '2025-01-01',
+        'period_to' => '2025-12-31',
+    ]);
+    $wizard->saveMembers($ownerId, $draft['public_id'], [910101]);
+    $wizard->saveEvidence($ownerId, $draft['public_id'], [910301]);
     $store->update($ownerId, $draft['public_id'], ['visibility' => 'public']);
     $visible = $store->findVisible($draft['public_id'], null);
     if ($visible === null || $visible['visibility'] !== 'public') {

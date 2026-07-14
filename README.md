@@ -211,7 +211,28 @@ The landing page loads the public insight catalogue for signed-out and signed-in
 - `GET /api/insights/{public-id}` for a public insight or an owner's own record; and
 - `GET /api/shared-insights/{token}` plus `/geteilt/{token}` for opaque unlisted sharing with `noindex` signals.
 
-Draft creation is intentionally allowed before parliamentary scope is complete. Every draft is still pinned immediately to the active immutable reference publication; Milestone 8 supplies and validates its scope, members, and evidence before publication.
+Draft creation is intentionally allowed before parliamentary scope is complete. Every draft is still pinned immediately to the active immutable reference publication. Public publication requires a complete scope, at least one date-valid selected member, at least one selected vote with recorded participation, a title, and a claim.
+
+## Insight wizard and vote analysis
+
+Creating or editing an insight opens the German five-step assistant: `Rahmen`, `Mitglieder`, `Abstimmungen`, `Einordnung`, and `Prüfen`. The scope selects the country, legislature, chamber, formal party, and period. Member eligibility is the intersection of the historical formal-party membership, chamber mandate, and chosen period; faction membership is displayed separately.
+
+Steps 2 and 3 share one member selection. Entering the vote workspace records the latest deliberate Step 2 selection as its reset baseline. Changing the cohort recalculates every vote's Yes/No/Split direction, participation denominator, cohesion, and outlier summary without discarding the search term or evidence selection. Direction always means the selected cohort's Yes-versus-No majority; abstentions, non-participation, and no mandate remain visible but do not decide direction.
+
+Changing the parliamentary scope transactionally clears previously selected members and evidence so choices from an old chamber, party, or period cannot survive under a new frame.
+
+Vote search covers exact affair/vote/registration identifiers and the published search document containing titles, exact questions, Yes/No meanings, official metadata, and reviewed classifications. The workspace provides direction, cohesion, vote-type, official-topic, reviewed-classification, and divergent-member filters. Selected evidence retains its immutable reference-publication and source-event identifiers. Evidence without recorded participation remains visible with a warning and blocks publication; abstention-only evidence is valid but non-directional.
+
+Authenticated wizard endpoints are owner-only and CSRF-protected on mutation:
+
+- `GET /insights/{public-id}/bearbeiten` renders the assistant;
+- `GET /api/insights/{public-id}/wizard` returns saved state and reference options;
+- `PUT /api/insights/{public-id}/scope` saves and validates the parliamentary scope;
+- `GET|PUT /api/insights/{public-id}/members` reads or replaces the date-valid cohort;
+- `POST /api/insights/{public-id}/votes` searches and calculates cohort results; and
+- `PUT /api/insights/{public-id}/evidence` safely reorders or replaces selected votes.
+
+The browser test fixture includes a clearly synthetic, test-only Swiss publication designed to exercise deterministic cohort changes and outliers. Production reference data continues to come exclusively from the publication pipeline.
 
 Both mutations require `X-CSRF-Token`. Login rotates the session ID. Cookies are HTTP-only, SameSite=Lax, and secure when `APP_URL` is HTTPS. Google JWT verification requires RS256, a matching key ID/signature, the configured audience, a permitted issuer, a future expiration, and a verified unique email.
 
@@ -223,7 +244,7 @@ Run the full application verification (unit tests, real test-database auth integ
 npm.cmd run verify
 ```
 
-Playwright's global setup seeds two deterministic test users and all three visibility states in the test database. It never reads or prints production credentials. The suite covers populated and empty catalogues, keyboard accordions, owner CRUD, unlisted-link indexing protection, and desktop/mobile light/dark baselines.
+Playwright's global setup seeds two deterministic test users, all three visibility states, and the synthetic vote-workspace fixture in the test database. It never reads or prints production credentials. The suite covers populated and empty catalogues, keyboard accordions, owner CRUD, unlisted-link indexing protection, the complete wizard, live cohort changes, vote inspection, validation, publication, and desktop/mobile light/dark baselines.
 
 The production verifier needs OpenSSL and prefers cURL for Google's signing keys, with a verified HTTPS stream fallback. The local PHP CLI is currently 8.2.30 and lacks OpenSSL, cURL, and `mbstring`; production Google login therefore remains a target-host smoke check until PHP 8.4 with the required extensions is used locally.
 

@@ -7,6 +7,7 @@ use Politiks\Tooling\MariaDb;
 
 require __DIR__ . '/../../scripts/lib/Environment.php';
 require __DIR__ . '/../../scripts/lib/MariaDb.php';
+require __DIR__ . '/TestReferenceFixture.php';
 
 $root = dirname(__DIR__, 2);
 $envPath = $root . DIRECTORY_SEPARATOR . '.env.test';
@@ -14,10 +15,7 @@ $envPath = $root . DIRECTORY_SEPARATOR . '.env.test';
 try {
     $pdo = MariaDb::connect(Environment::load($envPath));
     $pdo->beginTransaction();
-    $publicationId = $pdo->query('SELECT active_publication_id FROM reference_state WHERE singleton_id=1')->fetchColumn();
-    if ($publicationId === false || $publicationId === null) {
-        throw new RuntimeException('Playwright seed requires an active reference publication.');
-    }
+    $publicationId = ensureWizardReferenceFixture($pdo);
 
     $users = [
         ['playwright-google-subject', 'playwright.user@example.test', 'Mara Muster'],

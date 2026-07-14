@@ -14,7 +14,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 5. MariaDB schema and deterministic publication | Complete | 2026-07-14 |
 | 6. PHP shell, security baseline, and Google authentication | Complete | 2026-07-14 |
 | 7. Public catalogue and personal insight management | Complete | 2026-07-14 |
-| 8. Insight wizard and parliamentary evidence search | Not started | — |
+| 8. Insight wizard and parliamentary evidence search | Complete | 2026-07-14 |
 | 9. Campaign-context attachments | Not started | — |
 | 10. End-to-end hardening and MVP release | Not started | — |
 
@@ -287,3 +287,39 @@ Deliver the public landing catalogue and a complete authorization-correct insigh
 - The compact editor covers lifecycle text and visibility only. Scope, members, vote search, evidence ordering, and full publication validation are Milestone 8 work.
 - An unlisted token is intentionally unrecoverable from its stored hash. Saving an unlisted record through the current editor issues a fresh link and explicitly warns that the previous link is invalid.
 - Public evidence rendering is deliberately concise until the wizard supplies the complete vote semantics, member choices, provenance links, and limitations required by the product contract.
+
+## Milestone 8 — Five-step insight wizard and parliamentary evidence search
+
+### Goal
+
+Replace the compact editor with the complete guided evidence workflow and make the vote step a responsive analytical workspace for changing a selected party-member cohort.
+
+### Work completed
+
+- Added the accessible German five-step assistant with direct tab navigation, Back/Next controls, grouped validation that opens and focuses the first invalid step, desktop chevrons, and a stacked mobile layout.
+- Added owner-only, CSRF-protected scope, member, vote-search, and evidence APIs. Every lookup remains pinned to the insight's immutable reference publication.
+- Made scope changes transactionally clear member and evidence selections, preventing stale choices from surviving a changed chamber, party, or period.
+- Implemented historical member eligibility as the intersection of formal-party membership, chamber mandate, and selected period, while displaying dated faction and party membership separately on each vote.
+- Kept one authoritative member set synchronized between Steps 2 and 3. Entering Step 3 captures the latest Step 2 set as the reset baseline; toggling members persists and recomputes without a reload.
+- Implemented cohort direction from Yes-versus-No only, with ties and abstention-only votes neutral, and explicit eligible, participating, abstaining, absent, and no-mandate counts.
+- Added full-text and exact-identifier vote search with matching context, default final/overall prioritization, and direction, cohesion, type, official-topic, reviewed-classification, and divergent-member filters.
+- Added balanced green/red/neutral desktop columns and segmented mobile results. Collapsed cards expose identifiers, date, type, tallies, denominators, cohesion, and separately labeled official/reviewed metadata; details expose the exact question, Yes/No semantics, aggregate result, limitations, dated memberships, and official source.
+- Added neutral divergent-vote labels and an outlier panel based only on evaluated Yes/No choices in the current result set.
+- Added persistent, reorderable evidence selection that survives search and cohort changes. Selected no-participation evidence remains visible with a warning and blocks publication; abstention-only evidence remains valid and non-directional.
+- Strengthened public publication validation to require complete scope, members, evidence with recorded selected-member participation, title, and claim while preserving incomplete drafts.
+- Added a deliberately synthetic, test-only reference publication with four MPs and five designed votes. It exercises deterministic Yes, No, Split, non-directional, abstention, missing-participation, outlier, official-topic, and reviewed-classification cases without entering production tooling.
+- Added desktop/mobile light/dark vote-workspace baselines and removed mobile sticky overlays that could trap card actions between the navigation, cohort controls, and evidence tray.
+
+### Verification
+
+- MariaDB integration verified date-valid eligibility; deterministic Yes/No/Split/non-directional regrouping; exact identifier and match context; separate official/reviewed labels; immutable publication/event evidence identifiers; evidence ordering; no-participation publication rejection; and abstention-only publication acceptance.
+- Playwright covered the complete creation/resume/edit/publish path, synchronized member changes, reset semantics, filters, detailed vote inspection, outlier discovery, evidence retention, first-invalid-step focus, and both responsive layouts.
+- Four reviewed visual references cover the analytical workspace on desktop/mobile in light/dark modes. No unintended horizontal overflow, clipped actions, illegible contrast, or mobile sticky-control obstruction remained.
+- Full `npm.cmd run verify`: 21 pure PHP tests, all three MariaDB integration suites, and 34 Playwright cases passed.
+
+### Known limitations and next implications
+
+- Filter facets are derived from the bounded result set rather than a separate global aggregation query. The server returns at most 100 matching votes and clearly labels a limited result.
+- The outlier summary deliberately describes the current search result, so narrowing the query changes its evaluated-vote denominator.
+- The compact official acquisition fixture cannot truthfully test chamber-scoped cohorts because those sampled events have unknown chamber provenance. The synthetic fixture is isolated to tests; production behavior still depends on a verified full Swiss reference publication.
+- Campaign posters, images, YouTube videos, and ordinary links are intentionally deferred to Milestone 9. The assistant clearly labels that boundary in Step 4.

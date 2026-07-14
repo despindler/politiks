@@ -11,6 +11,8 @@ Every insight stores the reference publication it was built against. Country, le
 
 Only accepted/edited rows from SQLite's `reviewed_classification` view enter `ref_reviewed_classification`. Pending automated suggestions remain research data and are not application facts.
 
+The insight wizard reads its scope, people, memberships, mandates, vote choices, search documents, topics, and reviewed labels from the insight's stored publication. A member is selectable only when both the formal-party membership and chamber mandate overlap the chosen period. Vote direction is an application-time cohort calculation over `yes` and `no`; abstentions and missing participation remain explicit and do not decide direction. `insight_member` and `insight_vote_evidence` store ordered source identifiers plus the same publication ID, so later reference activations cannot silently change saved evidence.
+
 Apply and verify from the repository root:
 
 ```powershell

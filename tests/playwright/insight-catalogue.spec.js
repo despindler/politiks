@@ -30,7 +30,7 @@ test('public catalogue excludes non-public work and accordion is keyboard-operab
   await expect(publicList.getByText('Parlamentarische Evidenz')).toBeVisible();
 });
 
-test('owner sees every visibility state and can create, share, and archive an insight', async ({ page }, testInfo) => {
+test('owner sees every visibility state and creates a protected wizard draft', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Mit Google anmelden' }).click();
   const mine = page.locator('[data-mine-list]');
@@ -38,20 +38,19 @@ test('owner sees every visibility state and can create, share, and archive an in
   await expect(mine.getByText('Analyse für mein Team')).toBeVisible();
   await expect(mine.getByText('Mein veröffentlichter Insight')).toBeVisible();
 
-  const title = `Temporärer ${testInfo.project.name} Insight`;
   await page.getByRole('button', { name: 'Neuen Insight erstellen' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Titel und Aussage' });
-  await expect(dialog).toBeVisible();
-  await dialog.getByLabel('Titel').fill(title);
-  await dialog.getByLabel('Aussage').fill('Dieser Insight prüft den geschützten Lebenszyklus.');
-  await dialog.getByLabel('Sichtbarkeit').selectOption('unlisted');
-  await dialog.getByRole('button', { name: 'Speichern' }).click();
-  await expect(dialog.getByLabel('Neuer Freigabelink')).toHaveValue(/\/geteilt\/[A-Za-z0-9_-]{43}$/);
-
-  page.once('dialog', (confirmation) => confirmation.accept());
-  await dialog.getByRole('button', { name: 'Archivieren' }).click();
-  await expect(dialog).toBeHidden();
-  await expect(mine.getByText(title)).toHaveCount(0);
+  await expect(page).toHaveURL(/\/insights\/[a-f0-9]{26}\/bearbeiten$/);
+  await expect(page.getByRole('heading', { name: 'Parlamentarischen Rahmen wählen' })).toBeVisible();
+  const publicId = page.url().match(/\/insights\/([a-f0-9]{26})\/bearbeiten$/)[1];
+  const deletionStatus = await page.evaluate(async (id) => {
+    const session = await fetch('/api/session').then((response) => response.json());
+    return fetch(`/api/insights/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token },
+      body: '{}',
+    }).then((response) => response.status);
+  }, publicId);
+  expect(deletionStatus).toBe(200);
 });
 
 test('unlisted share page works without login and emits indexing protection', async ({ page }) => {

@@ -11,7 +11,8 @@
     "test:php": "php tests/php/run.php",
     "test:auth-db": "php tests/php/mariadb_auth_integration.php --env=.env.test",
     "test:insight-db": "php tests/php/mariadb_insight_integration.php",
-    "verify": "npm run test:php && npm run test:auth-db && npm run test:insight-db && npm test"
+    "test:wizard-db": "php tests/php/mariadb_wizard_integration.php",
+    "verify": "npm run test:php && npm run test:auth-db && npm run test:insight-db && npm run test:wizard-db && npm test"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
