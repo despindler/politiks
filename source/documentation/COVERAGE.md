@@ -26,17 +26,19 @@ The same document says available formats are listed on the Parliament website. T
 - A current Council of States member can have records under `/votes/councillors/<NUMBER>` from an earlier National Council mandate. A person's current council must therefore never be used to label the chamber of historical vote records.
 - The fixture contains eleven vote events across three affairs, with exact Yes/No meanings and individual choices. It includes majority/minority deadline or write-off decisions, multilingual vote meaning text, non-final questions, and a confirmed 2020-12-18 `Schlussabstimmung` whose meanings are `Annahme der Vorlage` and `Ablehnung der Vorlage`.
 
-## Unresolved Council of States acquisition path
+## Resolved chamber-explicit spreadsheet path
 
-Public Council of States individual votes exist under the official access rules, but this reconnaissance did not establish a chamber-explicit, machine-readable Council of States payload in the documented `ws-old` endpoints. The Official Bulletin is the official fallback reference, but its protocol extraction path has not yet been implemented or validated.
+The official Parliament page [`abstimmung-nr-xls`](https://www.parlament.ch/de/ratsbetrieb/abstimmungen/abstimmung-nr-xls) exposes session XLSX files for both chambers. On 2026-07-14 it linked 75 National Council workbooks from winter session 2011 through summer session 2026 and 19 Council of States workbooks from spring session 2022 through summer session 2026. The full snapshot preserves that page, every linked workbook, and the official access-rules PDF.
+
+The spreadsheets explicitly identify their chamber through the publication/link and contain event date and reference number, affair identifiers where applicable, question/submission text, Yes/No meanings where published, aggregate counts, and one decision column per member. They therefore replace the earlier temptation to infer a chamber from a roughly 200-person payload. Three historical workbook layouts are supported and regression-tested.
 
 Consequences:
 
-- Do not claim that the fixture contains Council of States roll-call votes.
-- Do not infer a vote's chamber from a person's current council.
-- Keep the research schema capable of both chambers and of source-specific chamber evidence.
-- Before the full-snapshot milestone, investigate the official bulletin/download format for Council of States voting protocols and document its join identifiers and coverage.
-- If no reliable official machine-readable route is available, pause before introducing a non-official secondary source or HTML extraction because that changes the source policy and requires an explicit project decision.
+- The small fixture remains a valid service-shape proof but must not be described as Council of States roll-call coverage.
+- The full snapshot contains explicit Council of States individual votes from spring 2022, matching the start of complete public access in the official rules.
+- National Council spreadsheet coverage begins in winter 2011 even though other official access routes cover earlier votes. National Council 2003â€“2011 and the narrower 1996â€“2003 scope remain future acquisition work.
+- Council of States 2014â€“2021 voting protocols remain available under the narrower official rules but are outside the current machine-readable spreadsheet snapshot.
+- A person's current chamber is never used to label a historical event; workbook provenance supplies the chamber.
 
 ## Other limitations
 

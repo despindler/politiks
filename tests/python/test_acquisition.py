@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import threading
+import zipfile
 from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -10,7 +12,13 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from politiks.acquisition import AcquisitionError, DownloadSettings, run_plan, validate_snapshot
+from politiks.acquisition import (
+    AcquisitionError,
+    DownloadSettings,
+    run_plan,
+    validate_content,
+    validate_snapshot,
+)
 
 
 @pytest.fixture()
@@ -95,6 +103,27 @@ def settings(tmp_path: Path) -> DownloadSettings:
 
 def read_manifest(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def minimal_xlsx() -> bytes:
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as workbook:
+        workbook.writestr("[Content_Types].xml", "<Types />")
+        workbook.writestr(
+            "xl/workbook.xml",
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" />',
+        )
+        workbook.writestr(
+            "xl/worksheets/sheet1.xml",
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" />',
+        )
+    return output.getvalue()
+
+
+def test_xlsx_validation_checks_the_workbook_container() -> None:
+    assert validate_content(minimal_xlsx(), "xlsx") is None
+    with pytest.raises(AcquisitionError, match="valid XLSX"):
+        validate_content(b"not-a-workbook", "xlsx")
 
 
 def test_download_is_checksummed_and_idempotent(tmp_path: Path, source_server) -> None:

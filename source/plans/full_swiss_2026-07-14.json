@@ -1,0 +1,811 @@
+{
+  "version": 1,
+  "snapshot": "swiss_2026-07-14",
+  "items": [
+    {
+      "name": "official_session_spreadsheet_page",
+      "url": "https://www.parlament.ch/de/ratsbetrieb/abstimmungen/abstimmung-nr-xls",
+      "path": "snapshots/swiss_2026-07-14/documentation/session-spreadsheets.html",
+      "format": "binary"
+    },
+    {
+      "name": "official_voting_data_access_rules",
+      "url": "https://www.parlament.ch/centers/documents/de/Informationen%20Zugang%20Abstimmungsdaten_DE.pdf",
+      "path": "snapshots/swiss_2026-07-14/documentation/voting-data-access-rules.pdf",
+      "format": "pdf"
+    },
+    {
+      "name": "councils",
+      "url": "http://ws-old.parlament.ch/councils",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/reference/councils.json"
+    },
+    {
+      "name": "legislative_periods",
+      "url": "http://ws-old.parlament.ch/LegislativePeriods",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/reference/legislative-periods.json"
+    },
+    {
+      "name": "sessions_all",
+      "url": "http://ws-old.parlament.ch/sessions",
+      "params": {
+        "lang": "de"
+      },
+      "mode": "paginated",
+      "path_template": "snapshots/swiss_2026-07-14/reference/sessions/page_{page:06d}.json"
+    },
+    {
+      "name": "cantons",
+      "url": "http://ws-old.parlament.ch/cantons",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/reference/cantons.json"
+    },
+    {
+      "name": "committees_all",
+      "url": "http://ws-old.parlament.ch/committees",
+      "params": {
+        "lang": "de"
+      },
+      "mode": "paginated",
+      "path_template": "snapshots/swiss_2026-07-14/reference/committees/page_{page:06d}.json"
+    },
+    {
+      "name": "factions_current",
+      "url": "http://ws-old.parlament.ch/Factions",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/reference/factions/current.json"
+    },
+    {
+      "name": "factions_historic_all",
+      "url": "http://ws-old.parlament.ch/Factions/historic",
+      "params": {
+        "lang": "de"
+      },
+      "mode": "paginated",
+      "path_template": "snapshots/swiss_2026-07-14/reference/factions/historic/page_{page:06d}.json"
+    },
+    {
+      "name": "parties_historic_all",
+      "url": "http://ws-old.parlament.ch/Parties/historic",
+      "params": {
+        "lang": "de"
+      },
+      "mode": "paginated",
+      "path_template": "snapshots/swiss_2026-07-14/reference/parties/historic/page_{page:06d}.json"
+    },
+    {
+      "name": "councillors_basic_details",
+      "url": "http://ws-old.parlament.ch/councillors/basicdetails",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/councillors/basic-details.json"
+    },
+    {
+      "name": "councillors_all",
+      "url": "http://ws-old.parlament.ch/councillors",
+      "params": {
+        "lang": "de"
+      },
+      "mode": "paginated",
+      "path_template": "snapshots/swiss_2026-07-14/councillors/list/page_{page:06d}.json"
+    },
+    {
+      "name": "councillors_historic_all",
+      "url": "http://ws-old.parlament.ch/councillors/historic",
+      "params": {
+        "lang": "de"
+      },
+      "mode": "paginated",
+      "path_template": "snapshots/swiss_2026-07-14/councillors/historic/page_{page:06d}.json"
+    },
+    {
+      "name": "vote_councillors_all",
+      "url": "http://ws-old.parlament.ch/votes/councillors",
+      "params": {
+        "lang": "de"
+      },
+      "mode": "paginated",
+      "path_template": "snapshots/swiss_2026-07-14/votes/councillors/page_{page:06d}.json"
+    },
+    {
+      "name": "affair_types",
+      "url": "http://ws-old.parlament.ch/affairs/types",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/affairs/reference/types.json"
+    },
+    {
+      "name": "affair_states",
+      "url": "http://ws-old.parlament.ch/affairs/states",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/affairs/reference/states.json"
+    },
+    {
+      "name": "affair_topics",
+      "url": "http://ws-old.parlament.ch/affairs/topics",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/affairs/reference/topics.json"
+    },
+    {
+      "name": "affair_descriptors",
+      "url": "http://ws-old.parlament.ch/affairs/descriptors",
+      "params": {
+        "lang": "de"
+      },
+      "path": "snapshots/swiss_2026-07-14/affairs/reference/descriptors.json"
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2026ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2026SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2026SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2026ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2026SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2026SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2026sonderapril_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2026SonderApril_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2026SonderApril_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2026fs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2026FS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2026FS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2026fs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2026FS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2026FS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2025ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2025WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2025WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2025ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2025WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2025WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2025hs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2025HS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2025HS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2025hs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2025HS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2025HS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2025ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2025SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2025SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2025ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2025SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2025SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2025sondermai_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2025SonderMai_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2025SonderMai_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2025fs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2025FS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2025FS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2025fs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2025FS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2025FS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2023ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2023WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2023WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2023hs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2023HS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2023HS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2023hs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2023HS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2023HS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2023ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2023SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2023SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2023sommer_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2023Sommer_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2023Sommer_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2023sonder_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2023Sonder_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2023Sonder_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2023aos_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2023aoS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2023aoS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2024ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2024WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2024WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2024ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2024WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2024WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2024hs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2024HS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2024HS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2024hs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2024HS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2024HS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2024ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2024SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2024SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2024ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2024SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2024SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2024sonderapril_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2024SonderApril_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2024SonderApril_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2024fr_hjahr_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2024Fr%c3%bchjahr_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2024Fr_hjahr_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2024fr_hjahr_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2024Fr%c3%bchjahr_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2024Fr_hjahr_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2023ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2023WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2023WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2023aos_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2023aoS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2023aoS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2023fs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2023FS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2023FS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2023fs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2023FS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2023FS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2022ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2022WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2022WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_nr_2022ws_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_NR_2022WS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/Abstimmungen_NR_2022WS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2022hs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2022HS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2022HS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_parlament_export_session_5116_de_ch",
+      "url": "https://www.parlament.ch/centers/documents/de/parlament_export_session_5116_de_CH.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/parlament_export_session_5116_de_CH.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2022ss_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2022SS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2022SS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_parlament_export_session_5115_de_ch",
+      "url": "https://www.parlament.ch/centers/documents/de/parlament_export_session_5115_de_CH.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/parlament_export_session_5115_de_CH.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_parlament_export_session_5114_de_ch",
+      "url": "https://www.parlament.ch/centers/documents/de/parlament_export_session_5114_de_CH.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/parlament_export_session_5114_de_CH.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_abstimmungen_sr_2022fs_de",
+      "url": "https://www.parlament.ch/centers/documents/de/Abstimmungen_SR_2022FS_DE.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/sr/Abstimmungen_SR_2022FS_DE.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit SR session spreadsheet."
+    },
+    {
+      "name": "session_votes_parlament_export_session_5113_de_ch",
+      "url": "https://www.parlament.ch/centers/documents/de/parlament_export_session_5113_de_CH.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/parlament_export_session_5113_de_CH.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_parlament_export_session_5112_de_ch",
+      "url": "https://www.parlament.ch/centers/documents/de/parlament_export_session_5112_de_CH.xlsx?Web=1",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/parlament_export_session_5112_de_CH.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_parlament_export_session_5111_de_ch",
+      "url": "https://www.parlament.ch/centers/documents/de/parlament_export_session_5111_de_CH.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/parlament_export_session_5111_de_CH.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_sommersession-2021-d",
+      "url": "https://www.parlament.ch/centers/documents/de/sommersession-2021-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/sommersession-2021-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5109-2021-sondersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5109-2021-sondersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5109-2021-sondersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5108-2021-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5108-2021-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5108-2021-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5107-2020-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5107-2020-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5107-2020-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5106-2020-sondersession-nr-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5106-2020-sondersession-nr-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5106-2020-sondersession-nr-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5105-2020-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5105-2020-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5105-2020-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5104-2020-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5104-2020-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5104-2020-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5103-2020-ausserordentliche-session-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5103-2020-ausserordentliche-session-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5103-2020-ausserordentliche-session-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5102-2020-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5102-2020-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5102-2020-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5101-2019-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5101-2019-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5101-2019-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_parlament_export_session_5019_de_ch",
+      "url": "https://www.parlament.ch/centers/documents/de/parlament_export_session_5019_de_CH.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/parlament_export_session_5019_de_CH.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5018-2019-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5018-2019-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5018-2019-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5017-2019-maisession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5017-2019-maisession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5017-2019-maisession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5016-2019-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5016-2019-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5016-2019-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5015-2018-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5015-2018-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5015-2018-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5014-2018-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5014-2018-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5014-2018-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5013-2018-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5013-2018-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5013-2018-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5012-2018-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5012-2018-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5012-2018-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5011-2017-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5011-2017-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5011-2017-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5010-2017-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5010-2017-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5010-2017-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5009-2017-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5009-2017-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5009-2017-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5008-2017-maisession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5008-2017-maisession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5008-2017-maisession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5007-2017-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5007-2017-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5007-2017-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5006-2016-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5006-2016-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5006-2016-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5005-2016-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5005-2016-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5005-2016-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5004-2016-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5004-2016-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5004-2016-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5003-2016-aprilsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5003-2016-aprilsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5003-2016-aprilsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5002-2016-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5002-2016-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5002-2016-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_5001-2015-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/5001-2015-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/5001-2015-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4920-2015-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4920-2015-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4920-2015-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4919-2015-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4919-2015-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4919-2015-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4918-2015-sondersession-mai-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4918-2015-sondersession-mai-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4918-2015-sondersession-mai-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4917-2015-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4917-2015-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4917-2015-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4916-2014-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4916-2014-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4916-2014-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4915-2014-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4915-2014-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4915-2014-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4914-2014-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4914-2014-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4914-2014-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4913-2014-sondersession-mai-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4913-2014-sondersession-mai-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4913-2014-sondersession-mai-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4912-2014-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4912-2014-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4912-2014-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4911-2013-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4911-2013-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4911-2013-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4910-2013-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4910-2013-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4910-2013-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4909-2013-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4909-2013-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4909-2013-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4908-2013-sondersession-april-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4908-2013-sondersession-april-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4908-2013-sondersession-april-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4907-2013-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4907-2013-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4907-2013-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4906-2012-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4906-2012-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4906-2012-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4905-2012-herbstsession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4905-2012-herbstsession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4905-2012-herbstsession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4904-2012-sommersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4904-2012-sommersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4904-2012-sommersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4903-2012-sondersession-mai-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4903-2012-sondersession-mai-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4903-2012-sondersession-mai-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4902-2012-fruehjahrssession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4902-2012-fruehjahrssession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4902-2012-fruehjahrssession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    },
+    {
+      "name": "session_votes_4901-2011-wintersession-d",
+      "url": "https://www.parlament.ch/centers/documents/de/4901-2011-wintersession-d.xlsx",
+      "path": "snapshots/swiss_2026-07-14/votes/session-spreadsheets/nr/4901-2011-wintersession-d.xlsx",
+      "format": "xlsx",
+      "notes": "Official chamber-explicit NR session spreadsheet."
+    }
+  ]
+}

@@ -29,6 +29,7 @@ CREATE TABLE source_file (
     sha256 TEXT NOT NULL CHECK (length(sha256) = 64),
     attribution TEXT,
     manifest_state TEXT NOT NULL,
+    source_format TEXT NOT NULL,
     is_json INTEGER NOT NULL CHECK (is_json IN (0, 1)),
     UNIQUE (import_run_id, local_path)
 );
@@ -346,6 +347,8 @@ CREATE TABLE voting_event (
     meaning_yes TEXT,
     meaning_no TEXT,
     vote_type TEXT,
+    vote_type_basis TEXT,
+    overall_decision TEXT,
     chamber_resolution_basis TEXT,
     source_record_id INTEGER REFERENCES source_record(id),
     UNIQUE (source_system, source_identifier)

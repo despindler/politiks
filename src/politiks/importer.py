@@ -10,9 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from politiks.swiss_xlsx import normalized_name, parse_workbook
+
 
 SOURCE_SYSTEM = "swiss_parliament_legacy_webservice"
-SCHEMA_VERSION = "2.0.0"
+XLSX_SOURCE_SYSTEM = "swiss_parliament_session_xlsx"
+SCHEMA_VERSION = "3.0.0"
 
 
 def _date(value: Any) -> str | None:
@@ -106,6 +109,10 @@ class SwissSnapshotImporter:
         self.report = ImportReport(snapshot_name=self.snapshot_name)
         self.country_id: int | None = None
         self.legislature_id: int | None = None
+        self._identifier_cache: dict[tuple[str, str, str], int | None] = {}
+        self._xlsx_person_cache: dict[tuple[Any, ...], int] = {}
+        self._name_index: dict[str, list[int]] | None = None
+        self._xlsx_faction_dates: set[tuple[int, int, str]] = set()
 
     def run(self) -> ImportReport:
         manifest = self._read_manifest()
@@ -119,11 +126,8 @@ class SwissSnapshotImporter:
         run_id = int(cursor.lastrowid)
         self._bootstrap_country()
 
-        registered: list[tuple[dict[str, Any], int, list[tuple[int, dict[str, Any]]]]] = []
         for row in manifest:
-            registered.append(self._register_file(run_id, row))
-
-        for row, _file_id, records in registered:
+            row, _file_id, records = self._register_file(run_id, row)
             self._normalize_file(row, records)
 
         self.connection.execute(
@@ -161,8 +165,8 @@ class SwissSnapshotImporter:
             """INSERT INTO source_file
                (import_run_id, endpoint, local_path, requested_url, final_url,
                 request_parameters_json, retrieved_at, http_status, content_type,
-                byte_count, sha256, attribution, manifest_state, is_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                byte_count, sha256, attribution, manifest_state, source_format, is_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 run_id,
                 row["endpoint"],
@@ -177,6 +181,7 @@ class SwissSnapshotImporter:
                 digest,
                 row.get("attribution"),
                 row["state"],
+                path.suffix.lower().lstrip(".") or "binary",
                 int(is_json),
             ),
         )
@@ -186,6 +191,12 @@ class SwissSnapshotImporter:
         if is_json:
             payload = json.loads(raw.decode("utf-8"))
             items = payload if isinstance(payload, list) else [payload]
+        elif path.suffix.lower() == ".xlsx":
+            chamber_hint = "NR" if "/nr/" in row["local_path"] else "SR"
+            items = list(parse_workbook(path, chamber_hint))
+        else:
+            items = []
+        if items:
             for index, record in enumerate(items):
                 if not isinstance(record, dict):
                     self.report.skipped_files.append(
@@ -193,6 +204,12 @@ class SwissSnapshotImporter:
                     )
                     continue
                 source_identifier = record.get("id")
+                if record.get("source_format") == "official_session_xlsx":
+                    source_identifier = f"{record['chamber']}:{record['registration_number']}"
+                    preserved_record = {key: value for key, value in record.items() if key != "choices"}
+                    preserved_record["choice_count"] = len(record.get("choices") or [])
+                else:
+                    preserved_record = record
                 record_cursor = self.connection.execute(
                     """INSERT INTO source_record
                        (source_file_id, record_index, record_kind, source_identifier, raw_json)
@@ -202,12 +219,17 @@ class SwissSnapshotImporter:
                         index,
                         row["endpoint"],
                         None if source_identifier is None else str(source_identifier),
-                        json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+                        json.dumps(
+                            preserved_record,
+                            ensure_ascii=False,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ),
                     ),
                 )
                 records.append((int(record_cursor.lastrowid), record))
                 self.report.source_records += 1
-        else:
+        elif not is_json:
             self.report.skipped_files.append(
                 {"endpoint": row["endpoint"], "reason": "registered for provenance; no JSON normalization"}
             )
@@ -239,15 +261,15 @@ class SwissSnapshotImporter:
             handler = self._council
         elif endpoint == "legislative_periods":
             handler = self._legislative_period
-        elif endpoint.startswith("sessions_page_"):
+        elif endpoint.startswith("sessions_page_") or endpoint == "sessions_all":
             handler = self._session
         elif endpoint == "cantons":
             handler = self._subdivision
-        elif endpoint.startswith("committees_page_"):
+        elif endpoint.startswith("committees_page_") or endpoint == "committees_all":
             handler = self._committee
         elif endpoint.startswith("factions_"):
             handler = self._faction
-        elif endpoint.startswith("parties_historic_page_"):
+        elif endpoint.startswith("parties_historic_page_") or endpoint == "parties_historic_all":
             handler = self._party
         elif endpoint == "affair_types":
             handler = self._matter_type
@@ -259,13 +281,13 @@ class SwissSnapshotImporter:
             handler = self._descriptor
         elif endpoint == "councillors_basic_details":
             handler = self._basic_person
-        elif endpoint.startswith("councillors_historic_page_"):
+        elif endpoint.startswith("councillors_historic_page_") or endpoint == "councillors_historic_all":
             handler = self._historic_person
         elif endpoint.startswith("councillor_") and endpoint != "councillors_basic_details":
             handler = self._person_detail
-        elif endpoint.startswith("councillors_page_"):
+        elif endpoint.startswith("councillors_page_") or endpoint == "councillors_all":
             handler = self._person_list_record
-        elif endpoint.startswith("vote_councillors_page_"):
+        elif endpoint.startswith("vote_councillors_page_") or endpoint == "vote_councillors_all":
             handler = self._vote_person
         elif endpoint.startswith("affairs_list_first_two_pages"):
             handler = self._matter_stub
@@ -281,6 +303,8 @@ class SwissSnapshotImporter:
             handler = self._vote_affair_detail
         elif endpoint.startswith("vote_councillor_"):
             handler = self._vote_councillor_detail
+        elif endpoint.startswith("session_votes_"):
+            handler = self._xlsx_vote_event
 
         if handler is None:
             self.report.skipped_files.append(
@@ -291,10 +315,12 @@ class SwissSnapshotImporter:
             handler(source_record_id, record)
         self.report.normalized_files += 1
 
-    def _lookup(self, table: str, source_identifier: Any) -> int | None:
+    def _lookup(
+        self, table: str, source_identifier: Any, source_system: str = SOURCE_SYSTEM
+    ) -> int | None:
         row = self.connection.execute(
             f"SELECT id FROM {table} WHERE source_system = ? AND source_identifier = ?",
-            (SOURCE_SYSTEM, str(source_identifier)),
+            (source_system, str(source_identifier)),
         ).fetchone()
         return int(row[0]) if row else None
 
@@ -503,13 +529,20 @@ class SwissSnapshotImporter:
             ),
         )
 
-    def _person_by_identifier(self, namespace: str, identifier: Any) -> int | None:
+    def _person_by_identifier(
+        self, namespace: str, identifier: Any, source_system: str = SOURCE_SYSTEM
+    ) -> int | None:
+        cache_key = (source_system, namespace, str(identifier))
+        if cache_key in self._identifier_cache:
+            return self._identifier_cache[cache_key]
         row = self.connection.execute(
             """SELECT person_id FROM person_identifier
                WHERE source_system = ? AND namespace = ? AND identifier = ?""",
-            (SOURCE_SYSTEM, namespace, str(identifier)),
+            (source_system, namespace, str(identifier)),
         ).fetchone()
-        return int(row[0]) if row else None
+        result = int(row[0]) if row else None
+        self._identifier_cache[cache_key] = result
+        return result
 
     def _ensure_person(
         self,
@@ -518,8 +551,9 @@ class SwissSnapshotImporter:
         namespace: str,
         identifier: Any,
         resolution_method: str = "direct",
+        identifier_source_system: str = SOURCE_SYSTEM,
     ) -> int:
-        person_id = self._person_by_identifier(namespace, identifier)
+        person_id = self._person_by_identifier(namespace, identifier, identifier_source_system)
         if person_id is None:
             cursor = self.connection.execute(
                 """INSERT INTO person
@@ -540,8 +574,14 @@ class SwissSnapshotImporter:
             )
             person_id = int(cursor.lastrowid)
             self._add_person_identifier(
-                person_id, namespace, identifier, source_record_id, resolution_method
+                person_id,
+                namespace,
+                identifier,
+                source_record_id,
+                resolution_method,
+                identifier_source_system,
             )
+            self._name_index = None
         else:
             self.connection.execute(
                 """UPDATE person SET
@@ -561,6 +601,7 @@ class SwissSnapshotImporter:
                     person_id,
                 ),
             )
+            self._name_index = None
         return person_id
 
     def _add_person_identifier(
@@ -570,10 +611,11 @@ class SwissSnapshotImporter:
         identifier: Any,
         source_record_id: int,
         resolution_method: str = "direct",
+        source_system: str = SOURCE_SYSTEM,
     ) -> None:
         if identifier is None:
             return
-        existing = self._person_by_identifier(namespace, identifier)
+        existing = self._person_by_identifier(namespace, identifier, source_system)
         if existing is not None and existing != person_id:
             raise ValueError(
                 f"Identifier collision for {namespace}:{identifier}: persons {existing} and {person_id}"
@@ -582,8 +624,9 @@ class SwissSnapshotImporter:
             """INSERT OR IGNORE INTO person_identifier
                (person_id, source_system, namespace, identifier, resolution_method, source_record_id)
                VALUES (?, ?, ?, ?, ?, ?)""",
-            (person_id, SOURCE_SYSTEM, namespace, str(identifier), resolution_method, source_record_id),
+            (person_id, source_system, namespace, str(identifier), resolution_method, source_record_id),
         )
+        self._identifier_cache[(source_system, namespace, str(identifier))] = person_id
 
     def _basic_person(self, source_record_id: int, record: dict[str, Any]) -> None:
         person_id = self._ensure_person(source_record_id, record, "cv_person_id", record["id"])
@@ -624,6 +667,11 @@ class SwissSnapshotImporter:
             )
         party = record.get("party") or {}
         party_id = self._lookup("political_party", party.get("id")) if party.get("id") else None
+        party_abbreviation = _text(party.get("abbreviation"))
+        if party_id is None and party_abbreviation and party_abbreviation != "-":
+            party_id = self._find_by_abbreviation("political_party", party_abbreviation)
+            if party_id is None:
+                party_id = self._placeholder_party(party_abbreviation, source_record_id)
         if party_id:
             self._membership(
                 "person_party_membership",
@@ -1095,6 +1143,312 @@ class SwissSnapshotImporter:
                     source_record_id,
                 ),
             )
+
+    def _xlsx_person(
+        self, source_record_id: int, member: dict[str, Any], chamber_id: int, occurred_at: str
+    ) -> int:
+        cache_key = (
+            member.get("cv_person_id"),
+            member.get("voting_councillor_number"),
+            member.get("normalized_name"),
+            member.get("canton"),
+            chamber_id,
+        )
+        cached = self._xlsx_person_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        person_id = None
+        cv_identifier = member.get("cv_person_id")
+        voting_number = member.get("voting_councillor_number")
+        cv_person_id = None
+        voting_person_id = None
+        if cv_identifier not in (None, ""):
+            cv_person_id = self._person_by_identifier("cv_person_id", cv_identifier)
+            person_id = cv_person_id
+        if voting_number not in (None, ""):
+            voting_person_id = self._person_by_identifier("voting_councillor_number", voting_number)
+            if person_id is None:
+                person_id = voting_person_id
+        if cv_person_id and voting_person_id and cv_person_id != voting_person_id:
+            self._merge_people(cv_person_id, voting_person_id)
+            person_id = cv_person_id
+
+        if person_id is None and member.get("normalized_name"):
+            if self._name_index is None:
+                self._name_index = {}
+                for row in self.connection.execute("SELECT id, display_name FROM person"):
+                    self._name_index.setdefault(normalized_name(row["display_name"]), []).append(int(row["id"]))
+            candidates = self._name_index.get(str(member["normalized_name"]), [])
+            if len(candidates) == 1:
+                person_id = candidates[0]
+            elif candidates:
+                placeholders = ",".join("?" for _ in candidates)
+                date_value = occurred_at[:10]
+                canton = str(member.get("canton") or "")
+                matched = self.connection.execute(
+                    f"""SELECT DISTINCT pm.person_id
+                         FROM person_mandate pm
+                         LEFT JOIN subdivision s ON s.id=pm.subdivision_id
+                         WHERE pm.person_id IN ({placeholders}) AND pm.chamber_id=?
+                           AND (pm.date_from IS NULL OR pm.date_from<=?)
+                           AND (pm.date_to IS NULL OR pm.date_to>=?)
+                           AND (?='' OR s.abbreviation=? OR s.name=?)""",
+                    (*candidates, chamber_id, date_value, date_value, canton, canton, canton),
+                ).fetchall()
+                if len(matched) == 1:
+                    person_id = int(matched[0][0])
+
+        identity_record = {
+            "firstName": None,
+            "lastName": None,
+            "gender": member.get("gender"),
+            "birthDate": member.get("birth_date"),
+        }
+        shown_name = str(member.get("display_name") or "Unbekannte Person")
+        if shown_name != "Unbekannte Person":
+            parts = shown_name.rsplit(" ", 1)
+            identity_record["firstName"] = parts[0] if len(parts) == 2 else None
+            identity_record["lastName"] = parts[-1]
+
+        if person_id is None:
+            spreadsheet_identity = "|".join(
+                (
+                    str(chamber_id),
+                    str(member.get("normalized_name") or "unknown"),
+                    str(member.get("canton") or ""),
+                )
+            )
+            person_id = self._ensure_person(
+                source_record_id,
+                identity_record,
+                "session_spreadsheet_member",
+                spreadsheet_identity,
+                "name_canton_chamber",
+                XLSX_SOURCE_SYSTEM,
+            )
+        else:
+            self.connection.execute(
+                """UPDATE person SET display_name=CASE WHEN display_name='Unbekannte Person' THEN ? ELSE display_name END,
+                   gender=COALESCE(gender, ?), birth_date=COALESCE(birth_date, ?) WHERE id=?""",
+                (shown_name, member.get("gender"), _date(member.get("birth_date")), person_id),
+            )
+
+        self._add_person_identifier(person_id, "cv_person_id", cv_identifier, source_record_id)
+        self._add_person_identifier(
+            person_id, "voting_councillor_number", voting_number, source_record_id
+        )
+        self._xlsx_person_cache[cache_key] = person_id
+        return person_id
+
+    def _merge_people(self, primary_id: int, duplicate_id: int) -> None:
+        """Merge identities only when one official row supplies both identifier bridges."""
+
+        if primary_id == duplicate_id:
+            return
+        duplicate = self.connection.execute(
+            "SELECT * FROM person WHERE id=?", (duplicate_id,)
+        ).fetchone()
+        if duplicate is None:
+            return
+        self.connection.execute(
+            """UPDATE person SET
+               first_name=COALESCE(first_name, ?), last_name=COALESCE(last_name, ?),
+               display_name=CASE WHEN display_name='Unbekannte Person' THEN ? ELSE display_name END,
+               gender=COALESCE(gender, ?), birth_date=COALESCE(birth_date, ?),
+               death_date=COALESCE(death_date, ?), is_placeholder=0
+               WHERE id=?""",
+            (
+                duplicate["first_name"],
+                duplicate["last_name"],
+                duplicate["display_name"],
+                duplicate["gender"],
+                duplicate["birth_date"],
+                duplicate["death_date"],
+                primary_id,
+            ),
+        )
+        self.connection.execute(
+            """INSERT OR IGNORE INTO person_identifier
+               (person_id, source_system, namespace, identifier, resolution_method, source_record_id)
+               SELECT ?, source_system, namespace, identifier, 'official_xlsx_identifier_bridge', source_record_id
+               FROM person_identifier WHERE person_id=?""",
+            (primary_id, duplicate_id),
+        )
+        copy_specs = (
+            (
+                "person_mandate",
+                "chamber_id, subdivision_id, date_from, date_to, role_name, source_system, source_identifier, source_record_id",
+            ),
+            (
+                "person_party_membership",
+                "party_id, date_from, date_to, is_inferred, evidence_basis, source_record_id",
+            ),
+            (
+                "person_faction_membership",
+                "faction_id, date_from, date_to, is_inferred, evidence_basis, source_record_id",
+            ),
+            (
+                "person_committee_membership",
+                "committee_id, date_from, date_to, role_name, source_record_id",
+            ),
+        )
+        for table, columns in copy_specs:
+            self.connection.execute(
+                f"""INSERT OR IGNORE INTO {table} (person_id, {columns})
+                     SELECT ?, {columns} FROM {table} WHERE person_id=?""",
+                (primary_id, duplicate_id),
+            )
+            self.connection.execute(f"DELETE FROM {table} WHERE person_id=?", (duplicate_id,))
+        self.connection.execute(
+            """UPDATE voting_choice SET person_id=?
+               WHERE person_id=? AND NOT EXISTS (
+                 SELECT 1 FROM voting_choice existing
+                 WHERE existing.voting_event_id=voting_choice.voting_event_id
+                   AND existing.person_id=?
+               )""",
+            (primary_id, duplicate_id, primary_id),
+        )
+        self.connection.execute("DELETE FROM voting_choice WHERE person_id=?", (duplicate_id,))
+        self.connection.execute("DELETE FROM person_identifier WHERE person_id=?", (duplicate_id,))
+        self.connection.execute("DELETE FROM person WHERE id=?", (duplicate_id,))
+        for key, value in list(self._identifier_cache.items()):
+            if value == duplicate_id:
+                self._identifier_cache[key] = primary_id
+        for key, value in list(self._xlsx_person_cache.items()):
+            if value == duplicate_id:
+                self._xlsx_person_cache[key] = primary_id
+        self._name_index = None
+
+    def _xlsx_vote_event(self, source_record_id: int, record: dict[str, Any]) -> None:
+        chamber_row = self.connection.execute(
+            "SELECT id FROM chamber WHERE abbreviation=? LIMIT 1", (record["chamber"],)
+        ).fetchone()
+        if chamber_row is None:
+            raise ValueError(f"Unknown chamber abbreviation {record['chamber']}")
+        chamber_id = int(chamber_row[0])
+
+        matter_id = None
+        if record.get("affair_id"):
+            matter_id = self._ensure_matter(
+                source_record_id,
+                record["affair_id"],
+                title=record.get("affair_title"),
+                formatted=record.get("affair_formatted_id"),
+            )
+            if record.get("affair_type"):
+                type_row = self.connection.execute(
+                    "SELECT id FROM matter_type WHERE name=? ORDER BY id LIMIT 1",
+                    (record["affair_type"],),
+                ).fetchone()
+                if type_row:
+                    self.connection.execute(
+                        "UPDATE parliamentary_matter SET matter_type_id=COALESCE(matter_type_id, ?) WHERE id=?",
+                        (int(type_row[0]), matter_id),
+                    )
+
+        occurred_at = str(record["occurred_at"])
+        session_row = self.connection.execute(
+            """SELECT id FROM parliamentary_session
+               WHERE (date_from IS NULL OR date_from<=?) AND (date_to IS NULL OR date_to>=?)
+               ORDER BY CASE WHEN date_from IS NULL THEN 1 ELSE 0 END, date_from DESC LIMIT 1""",
+            (occurred_at[:10], occurred_at[:10]),
+        ).fetchone()
+        session_id = int(session_row[0]) if session_row else None
+        event_source_identifier = f"{record['chamber']}:{record['registration_number']}"
+        self.connection.execute(
+            """INSERT INTO voting_event
+               (matter_id, chamber_id, session_id, source_system, source_identifier,
+                registration_number, occurred_at, division_text, submission_text,
+                meaning_yes, meaning_no, vote_type, vote_type_basis, overall_decision,
+                chamber_resolution_basis, source_record_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                       'explicit_official_workbook_and_row', ?)
+               ON CONFLICT(source_system, source_identifier) DO UPDATE SET
+                 matter_id=excluded.matter_id, chamber_id=excluded.chamber_id,
+                 session_id=excluded.session_id, occurred_at=excluded.occurred_at,
+                 division_text=excluded.division_text, submission_text=excluded.submission_text,
+                 meaning_yes=excluded.meaning_yes, meaning_no=excluded.meaning_no,
+                 vote_type=excluded.vote_type, vote_type_basis=excluded.vote_type_basis,
+                 overall_decision=excluded.overall_decision""",
+            (
+                matter_id,
+                chamber_id,
+                session_id,
+                XLSX_SOURCE_SYSTEM,
+                event_source_identifier,
+                record["registration_number"],
+                occurred_at,
+                record.get("division_text"),
+                record.get("submission_text"),
+                record.get("meaning_yes"),
+                record.get("meaning_no"),
+                record.get("vote_type"),
+                record.get("vote_type_basis"),
+                record.get("overall_decision"),
+                source_record_id,
+            ),
+        )
+        event_id = self._lookup("voting_event", event_source_identifier, XLSX_SOURCE_SYSTEM)
+        if event_id is None:
+            raise AssertionError("Inserted XLSX voting event cannot be resolved")
+
+        aggregate_rows = []
+        for choice, amount in (record.get("aggregates") or {}).items():
+            aggregate_rows.append((event_id, "total", f"xlsx:{choice}", choice, int(amount), 0))
+        self.connection.executemany(
+            """INSERT OR REPLACE INTO voting_aggregate
+               (voting_event_id, aggregate_scope, source_choice_code,
+                normalized_choice, vote_count, mapping_is_inferred)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            aggregate_rows,
+        )
+
+        choice_rows = []
+        seen_people: set[int] = set()
+        for member in record.get("choices") or []:
+            person_id = self._xlsx_person(source_record_id, member, chamber_id, occurred_at)
+            if person_id in seen_people:
+                raise ValueError(
+                    f"Two workbook columns resolve to person {person_id} in event {event_source_identifier}"
+                )
+            seen_people.add(person_id)
+            choice_rows.append(
+                (
+                    event_id,
+                    person_id,
+                    XLSX_SOURCE_SYSTEM,
+                    f"{event_source_identifier}:{member['column']}",
+                    member["raw_decision"],
+                    member["normalized_choice"],
+                    source_record_id,
+                )
+            )
+            faction = _text(member.get("faction"))
+            if faction:
+                faction = faction.removeprefix("Fraktion ").strip()
+                faction_id = self._placeholder_faction(faction, source_record_id)
+                membership_key = (person_id, faction_id, occurred_at[:10])
+                if membership_key not in self._xlsx_faction_dates:
+                    self._membership(
+                        "person_faction_membership",
+                        "faction_id",
+                        person_id,
+                        faction_id,
+                        occurred_at[:10],
+                        occurred_at[:10],
+                        False,
+                        "explicit_session_spreadsheet_at_vote_date",
+                        source_record_id,
+                    )
+                    self._xlsx_faction_dates.add(membership_key)
+        self.connection.executemany(
+            """INSERT OR REPLACE INTO voting_choice
+               (voting_event_id, person_id, source_system, source_identifier,
+                raw_decision, normalized_choice, source_record_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            choice_rows,
+        )
 
     def _collect_report(self) -> None:
         tables = (

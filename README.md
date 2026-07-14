@@ -96,6 +96,18 @@ Validate every successful manifest row against its stored byte count, SHA256, an
   --manifest source/manifests/fixture.jsonl
 ```
 
+Acquire/resume and validate the full dated MVP snapshot:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/download_sources.py `
+  --plan source/plans/full_swiss_2026-07-14.json `
+  --manifest source/manifests/full_swiss_2026-07-14.jsonl
+.\.venv\Scripts\python.exe scripts/validate_source_snapshot.py `
+  --manifest source/manifests/full_swiss_2026-07-14.jsonl
+```
+
+To refresh from the official spreadsheet page, first generate and review a newly dated immutable plan with `scripts/generate_full_snapshot_plan.py`; do not replace bytes inside an existing snapshot.
+
 Run acquisition unit tests without relying on the Parliament service:
 
 ```powershell
@@ -118,11 +130,23 @@ The notebook resolves the repository root, recreates the database through `datab
 
 The fixture import's supported shapes, mapping rules, counts, and limitations are in `database/IMPORT_REPORT.md`.
 
+Recreate the full research database from committed source bytes without network access:
+
+```powershell
+$env:POLITIKS_SOURCE_MANIFEST = 'source/manifests/full_swiss_2026-07-14.jsonl'
+.\.venv\Scripts\python.exe -m jupyter nbconvert --to notebook --execute `
+  --inplace notebooks/01_import_source_data.ipynb `
+  --ExecutePreprocessor.timeout=1200
+Remove-Item Env:POLITIKS_SOURCE_MANIFEST
+```
+
+The full quality assessment, including exact historical boundaries, semantic gaps, membership gaps, duplicates, and aggregate anomalies, is in `source/documentation/DATA_QUALITY_FULL_2026-07-14.md`.
+
 ## Remaining data workflow
 
 The remaining workflow is delivered incrementally according to `.agents/PLAN.md`:
 
-1. A full-snapshot plan will expand the fixture after the Council of States source path is confirmed.
+1. Auditable topic/beneficiary classification will build on the full research snapshot while keeping derived suggestions separate from official facts.
 2. A controlled publication script will transfer the application read model into MariaDB.
 3. `site/` will contain every runtime file required for Apache deployment.
 

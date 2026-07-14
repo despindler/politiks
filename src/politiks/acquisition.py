@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import os
 import time
 import xml.etree.ElementTree as ET
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -371,6 +373,7 @@ def accept_header(response_format: str) -> str:
         "json": "application/json",
         "xml": "application/xml, text/xml;q=0.9",
         "pdf": "application/pdf",
+        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "binary": "application/octet-stream, */*;q=0.5",
     }.get(response_format, "*/*")
 
@@ -390,6 +393,19 @@ def validate_content(content: bytes, response_format: str) -> Any:
             raise AcquisitionError(f"Source response is not valid XML: {error}") from error
     if response_format == "pdf" and not content.startswith(b"%PDF-"):
         raise AcquisitionError("Source response is not a PDF document.")
+    if response_format == "xlsx":
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as workbook:
+                required_parts = {"[Content_Types].xml", "xl/workbook.xml"}
+                names = set(workbook.namelist())
+                if not required_parts.issubset(names) or not any(
+                    name.startswith("xl/worksheets/sheet") and name.endswith(".xml")
+                    for name in names
+                ):
+                    raise AcquisitionError("Source response is not a complete XLSX workbook.")
+                ET.fromstring(workbook.read("xl/workbook.xml"))
+        except (zipfile.BadZipFile, KeyError, ET.ParseError) as error:
+            raise AcquisitionError(f"Source response is not a valid XLSX workbook: {error}") from error
     return None
 
 
@@ -399,6 +415,10 @@ def validate_content_type(content_type: str, response_format: str) -> None:
         "json": ("application/json", "text/json"),
         "xml": ("application/xml", "text/xml"),
         "pdf": ("application/pdf",),
+        "xlsx": (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/octet-stream",
+        ),
         "binary": tuple(),
     }.get(response_format, tuple())
     if expected and not any(value in lowered for value in expected):
@@ -484,6 +504,8 @@ def validate_snapshot(source_root: Path, manifest_path: Path) -> dict[str, int]:
             validate_content(content, "xml")
         elif suffix == ".pdf":
             validate_content(content, "pdf")
+        elif suffix == ".xlsx":
+            validate_content(content, "xlsx")
         checked += 1
         total_bytes += len(content)
 

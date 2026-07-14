@@ -41,3 +41,34 @@ Individual decision strings are preserved in `voting_choice.raw_decision`. The s
 - No NLP, beneficiary classification, embeddings, or model calls occur during import.
 
 The executable notebook reports all of these limitations and includes a representative choice-to-event-to-affair-to-person-to-date-valid-membership join. The full Swiss snapshot and broader data-quality assessment belong to Milestone 3.
+
+# Full snapshot import report
+
+## Scope
+
+Milestone 3 extends the same offline importer with the official session XLSX format and the `full_swiss_2026-07-14` manifest. It supports legacy, transitional, and current workbook layouts and uses the workbook's publication path as explicit National Council or Council of States evidence.
+
+The clean full run registers 362 source files and 34,646 source records. It imports 21,569 unique voting events and 3,861,590 individual choices, resolves all event chambers and people, and finishes with zero foreign-key violations. The complete metrics and source anomalies are in `source/documentation/DATA_QUALITY_FULL_2026-07-14.md`.
+
+## XLSX identifier and mapping rules
+
+The event stable key is the explicit chamber plus official reference number. Official affair numbers are canonicalized without discarding their displayed form. The physical workbook name, sheet, row number, exact question/submission, Yes/No meanings, raw member decision, member column, aggregates, overall decision, and type-derivation basis retain source provenance.
+
+Person columns can supply a voting councillor number, biography/CV ID, or a name/faction/canton identity depending on workbook age. Identifiers are namespaced and bridged only when an official record explicitly supplies both values. Historic councillor records and daily workbook faction evidence resolve names without equating unrelated numeric namespaces.
+
+Individual choices normalize German/English Yes and No, abstention, excused, non-participation, and presiding tokens. Unknown tokens remain `other`. Empty member cells remain without an inferred individual choice because some workbook member headers contain people not active for that vote. Aggregate labels such as `Anzahl 'Ja'` use a separate descriptive-header normalizer and unknown aggregate metadata is ignored.
+
+Vote types `final`, `overall`, `entry`, and `urgency` are derived deterministically from official question phrases. Every derived value stores `derived_from_official_question_text`; unmatched rows store `other` with `unclassified_official_question_text`. This is a discovery aid, not an assertion that the Parliament supplied that category.
+
+## Layout repairs and duplicates
+
+Two narrow structural repairs are tested and source-visible:
+
+- one official 2015 legacy workbook splits a long vote across two physical spreadsheet rows; the importer reconstructs the row while preserving its original row provenance; and
+- one current-layout row spills a long question across metadata columns; the aggregate block is detected from its numeric decision/count structure and the text is reconstructed.
+
+Fourteen physical source rows repeat a chamber/reference-number event already present elsewhere in the official workbook set. All 21,583 physical rows are retained in `source_record`; normalized event and choice uniqueness produces 21,569 events. No duplicate stable identifiers remain in normalized tables.
+
+## Reproduction
+
+The notebook defaults to the small fixture. Set `POLITIKS_SOURCE_MANIFEST=source/manifests/full_swiss_2026-07-14.jsonl` before executing it to recreate the full database. It performs no network requests and validates every manifest byte count and SHA256 first. The generated SQLite file remains ignored.

@@ -9,7 +9,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 0. Repository foundation and executable contracts | Complete | 2026-07-14 |
 | 1. Swiss source reconnaissance and acquisition proof | Complete | 2026-07-14 |
 | 2. Country-neutral SQLite research model and import | Complete | 2026-07-14 |
-| 3. Full Swiss snapshot and data-quality report | Not started | — |
+| 3. Full Swiss snapshot and data-quality report | Complete | 2026-07-14 |
 | 4. Auditable topic and beneficiary classification | Not started | — |
 | 5. MariaDB schema and deterministic publication | Not started | — |
 | 6. PHP shell, security baseline, and Google authentication | Not started | — |
@@ -119,3 +119,36 @@ Create the reproducible research schema and import every supported local Swiss f
 - The bounded fixture leaves 2,169 choices without date-valid party membership and 2,158 without date-valid faction membership; full acquisition must quantify and reduce these gaps.
 - Party/faction intervals derived from the three detailed current profiles are useful for representative joins but remain explicitly inferred, not source-confirmed history.
 - The Council of States machine-readable acquisition route remains the principal question for Milestone 3.
+
+## Milestone 3 — Full Swiss snapshot and data-quality report
+
+### Goal
+
+Acquire and reproducibly import the practical chamber-explicit historical scope required for the Swiss MVP, then quantify every material coverage and source-quality gap.
+
+### Work completed
+
+- Resolved the official Council of States source path through the Parliament's session-spreadsheet page, avoiding a non-official source or chamber inference.
+- Added a reproducible plan generator and committed the dated `swiss_2026-07-14` plan, manifest, official documentation, complete reference pages, and all 94 linked session XLSX workbooks.
+- Extended acquisition validation to inspect XLSX ZIP/workbook structure before atomic promotion and added regression coverage for malformed spreadsheets.
+- Added a streaming parser for legacy, transitional, and current workbook layouts, including narrow provenance-preserving repairs for two observed official structural defects.
+- Extended the country-neutral import with explicit workbook chamber evidence, exact vote semantics, overall decisions, type-derivation provenance, official aggregates, member choices, namespaced identifiers, and explicit faction-at-vote-date evidence.
+- Kept 21,583 physical workbook event rows in provenance while normalizing 14 repeated event keys to 21,569 unique events.
+- Made the notebook select either the compact fixture or a full manifest through `POLITIKS_SOURCE_MANIFEST`, without network access.
+- Added a dated quality report covering retrieval integrity, historical bounds, chambers, vote types, semantic gaps, affairs, people, dated memberships, duplicates, decision tokens, and aggregate anomalies.
+
+### Verification
+
+- `scripts/validate_source_snapshot.py --manifest source/manifests/full_swiss_2026-07-14.jsonl`: 362 files, 24,441,153 bytes, zero unresolved errors.
+- `python -m pytest`: 19 passed, covering all three official workbook layouts and descriptive aggregate labels.
+- Two independent clean full imports produced identical logical counts: 34,646 source records, 21,569 voting events, and 3,861,590 choices.
+- The full notebook executed top to bottom with 362 source files, zero unresolved chambers, zero stable-identifier duplicates, and zero foreign-key violations.
+- Full coverage is 18,647 National Council events from 2011-12-05 and 2,922 Council of States events from 2022-02-28, both through 2026-06-19.
+
+### Known limitations and next implications
+
+- Seventeen procedural/unassigned events have no affair link. Older National Council rows omit 444 Yes meanings, 446 No meanings, and 4,544 exact questions; those fields remain null.
+- The workbook snapshot provides 7,171 affair identities/titles/types but not per-affair text/summary/topic detail. Classification must label this input limitation and can enrich it through a separately versioned official-detail acquisition.
+- 39,445 choices (1.02%) lack a date-valid party interval and 120 lack a date-valid faction interval; no current membership is projected backward to fill them.
+- Official aggregate/member matrices differ in 179 National Council events across five workbooks. Nineteen 2023 rows contain doubled published aggregates; ambiguous 2014 blank cells are not assigned to individual people. Raw aggregates and explicit choices remain separate.
+- National Council 2003–2011 and the narrower 1996–2003 public scope need another official adapter. Council of States 2014–2021 requires Official Bulletin protocol extraction.

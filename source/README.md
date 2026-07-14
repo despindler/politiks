@@ -36,6 +36,21 @@ Validate the complete preserved fixture:
 
 Create a new dated plan and manifest for a refresh. Never silently overwrite an existing snapshot with different bytes.
 
+## Acquire or resume the full MVP snapshot
+
+The committed full plan preserves all official session spreadsheets exposed on the retrieval date plus complete paginated member and reference endpoints:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/download_sources.py `
+  --plan source/plans/full_swiss_2026-07-14.json `
+  --manifest source/manifests/full_swiss_2026-07-14.jsonl
+
+.\.venv\Scripts\python.exe scripts/validate_source_snapshot.py `
+  --manifest source/manifests/full_swiss_2026-07-14.jsonl
+```
+
+The validated snapshot contains 362 files totaling 24,441,153 bytes, including 75 National Council and 19 Council of States XLSX workbooks. A resumptive run verifies and skips all existing successful files. Generate a newly dated plan for a refresh; never append changed bytes under this snapshot name.
+
 ## Source behavior and coverage
 
 See:
@@ -43,4 +58,4 @@ See:
 - `documentation/ENDPOINT_INVENTORY.md`
 - `documentation/COVERAGE.md`
 
-The legacy service currently works over documented plain HTTP in this environment; HTTPS returns 403. It is read-only and receives no credentials. This transport limitation is recorded explicitly rather than concealed.
+The legacy service currently works over documented plain HTTP in this environment; HTTPS returns 403. It is read-only and receives no credentials. Official Parliament pages, access rules, and spreadsheets are retrieved over HTTPS. These transport characteristics are recorded explicitly rather than concealed.
