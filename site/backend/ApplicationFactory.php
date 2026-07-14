@@ -12,6 +12,7 @@ use Politiks\App\Auth\OpenSslJwtSignatureVerifier;
 use Politiks\App\Auth\TestGoogleTokenVerifier;
 use Politiks\App\Security\Csrf;
 use Politiks\App\Security\NativeSession;
+use Politiks\App\Insight\InsightStore;
 
 final class ApplicationFactory
 {
@@ -35,6 +36,7 @@ final class ApplicationFactory
             $config,
             new AuthService($verifier, $users, $session),
             new Csrf($session),
+            new InsightStore($database->connection(...), $config->appUrl),
         );
     }
 }

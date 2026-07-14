@@ -6,9 +6,9 @@ namespace Politiks\App;
 
 final class HomePage
 {
-    public static function render(): string
+    public static function render(bool $shared = false): string
     {
-        return <<<'HTML'
+        $html = <<<'HTML'
 <!doctype html>
 <html lang="de" data-bs-theme="light">
 <head>
@@ -16,13 +16,14 @@ final class HomePage
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <meta name="description" content="Politiks macht parlamentarische Abstimmungen nachvollziehbar.">
+    __ROBOTS__
     <title>Politiks – Abstimmungen verstehen</title>
     <script src="/assets/theme-init.js"></script>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/assets/app.css">
 </head>
-<body>
+<body data-page="__PAGE__">
     <a class="visually-hidden-focusable skip-link" href="#main-content">Zum Inhalt springen</a>
     <nav class="navbar navbar-expand-lg sticky-top app-navbar" aria-label="Hauptnavigation">
         <div class="container py-2">
@@ -108,27 +109,66 @@ final class HomePage
         <section class="container py-5 py-lg-6" id="insights" aria-labelledby="insights-title">
             <div class="row align-items-end g-3 mb-4">
                 <div class="col-lg-8">
-                    <p class="eyebrow mb-2">Von der Community</p>
-                    <h2 class="display-6 fw-semibold mb-0" id="insights-title">Öffentliche Insights</h2>
+                    <p class="eyebrow mb-2" data-catalogue-eyebrow>Von der Community</p>
+                    <h2 class="display-6 fw-semibold mb-0" id="insights-title" data-catalogue-title>Öffentliche Insights</h2>
                 </div>
                 <div class="col-lg-4"><p class="text-body-secondary mb-0 text-lg-end">Behauptung und parlamentarische Evidenz bleiben klar getrennt.</p></div>
             </div>
-            <div class="empty-state surface-card text-center">
-                <span class="icon-tile mx-auto mb-3"><i class="bi bi-lightbulb"></i></span>
-                <h3 class="h5">Noch keine öffentlichen Insights</h3>
-                <p class="text-body-secondary mb-0">Die öffentliche Sammlung entsteht im nächsten Projektschritt.</p>
+            <div class="catalogue-status surface-card text-center" data-public-status role="status" aria-live="polite">
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Insights werden geladen …
             </div>
+            <div class="accordion insight-list d-none" id="public-insights-list" data-public-list></div>
+            <button class="btn btn-outline-secondary w-100 mt-3 d-none" type="button" data-public-more>
+                <i class="bi bi-arrow-down-circle me-2" aria-hidden="true"></i>Weitere Insights laden
+            </button>
         </section>
 
         <section class="container pb-5 d-none" id="meine-insights" data-authenticated aria-labelledby="my-insights-title">
             <div class="surface-card p-4 p-lg-5">
-                <p class="eyebrow mb-2">Dein Arbeitsbereich</p>
-                <h2 class="h3" id="my-insights-title">Meine Insights</h2>
-                <p class="text-body-secondary mb-4">Entwürfe und Veröffentlichungen werden im nächsten Projektschritt verfügbar.</p>
-                <button class="btn btn-primary w-100" type="button" disabled><i class="bi bi-plus-lg me-2"></i>Neuen Insight erstellen</button>
+                <div class="row align-items-end g-3 mb-4">
+                    <div class="col-md-8">
+                        <p class="eyebrow mb-2">Dein Arbeitsbereich</p>
+                        <h2 class="h3 mb-1" id="my-insights-title">Meine Insights</h2>
+                        <p class="text-body-secondary mb-0">Entwürfe, geteilte und veröffentlichte Insights an einem Ort.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary w-100" type="button" data-create-insight><i class="bi bi-plus-lg me-2"></i>Neuen Insight erstellen</button>
+                    </div>
+                </div>
+                <div class="catalogue-status text-center" data-mine-status role="status" aria-live="polite">
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Deine Insights werden geladen …
+                </div>
+                <div class="row g-3 d-none" data-mine-list></div>
+                <button class="btn btn-outline-secondary w-100 mt-3 d-none" type="button" data-mine-more>Weitere eigene Insights laden</button>
             </div>
         </section>
     </main>
+
+    <div class="modal fade" id="insight-editor" tabindex="-1" aria-labelledby="insight-editor-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <form data-insight-form>
+                    <div class="modal-header">
+                        <div><p class="eyebrow mb-1">Insight bearbeiten</p><h2 class="modal-title h4" id="insight-editor-title">Titel und Aussage</h2></div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schliessen"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger d-none" role="alert" data-editor-error></div>
+                        <div class="mb-3"><label class="form-label" for="insight-title">Titel</label><input class="form-control" id="insight-title" name="title" maxlength="255" required></div>
+                        <div class="mb-3"><label class="form-label" for="insight-claim">Aussage</label><textarea class="form-control" id="insight-claim" name="claim_text" rows="5" maxlength="5000"></textarea><div class="form-text">Deine Interpretation – getrennt von der parlamentarischen Evidenz.</div></div>
+                        <div class="mb-3"><label class="form-label" for="insight-notes">Erläuterung</label><textarea class="form-control" id="insight-notes" name="explanatory_notes" rows="4" maxlength="20000"></textarea></div>
+                        <div class="mb-3"><label class="form-label" for="insight-visibility">Sichtbarkeit</label><select class="form-select" id="insight-visibility" name="visibility"><option value="draft">Entwurf – nur für mich</option><option value="unlisted">Nicht gelistet – nur mit Link</option><option value="public">Öffentlich – im Katalog</option></select></div>
+                        <div class="share-panel rounded-3 p-3 d-none" data-share-panel><label class="form-label" for="insight-share-url">Neuer Freigabelink</label><div class="input-group"><input class="form-control" id="insight-share-url" readonly data-share-url><button class="btn btn-outline-secondary" type="button" data-copy-share><i class="bi bi-copy me-1"></i>Kopieren</button></div><p class="small text-body-secondary mt-2 mb-0">Der bisherige Link ist damit ungültig.</p></div>
+                    </div>
+                    <div class="modal-footer flex-column flex-sm-row">
+                        <button type="button" class="btn btn-outline-danger w-100 me-sm-auto" data-archive-insight><i class="bi bi-archive me-2"></i>Archivieren</button>
+                        <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2 me-2"></i>Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <footer class="border-top py-4">
         <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2 small text-body-secondary">
@@ -142,6 +182,11 @@ final class HomePage
 </body>
 </html>
 HTML;
+        return str_replace(
+            ['__ROBOTS__', '__PAGE__'],
+            [$shared ? '<meta name="robots" content="noindex, nofollow">' : '', $shared ? 'shared' : 'home'],
+            $html,
+        );
     }
 
     public static function notFound(): string

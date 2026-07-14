@@ -5,7 +5,7 @@
 - immutable, publication-scoped `ref_*` tables copied from the reproducible SQLite research model;
 - application-owned users, insights, selected members, vote evidence, and campaign context.
 
-Every insight stores the reference publication it was built against. Composite foreign keys ensure its country, legislature, chamber, party, members, and voting evidence all belong to that same immutable publication. This preserves the evidence behind an insight when a newer parliamentary snapshot is activated.
+Every insight stores the reference publication it was built against. Country, legislature, chamber, and party are nullable while a draft is incomplete. Once present, composite foreign keys ensure that scope, members, and voting evidence all belong to the same immutable publication. This preserves the evidence behind an insight when a newer parliamentary snapshot is activated.
 
 `reference_state` is the single active-snapshot pointer. The publisher loads a complete new publication in one transaction, reconciles every table, finalizes its metadata, and changes that pointer only at commit. Unchanged deterministic input reuses its existing publication key. Application queries for current reference data must join through `reference_state`; saved insights must use their own `reference_publication_id`.
 

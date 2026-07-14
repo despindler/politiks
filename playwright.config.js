@@ -6,6 +6,7 @@ loadTestEnvironment();
 const baseURL = process.env.TEST_BASE_URL || 'http://127.0.0.1:8080';
 
 module.exports = defineConfig({
+  globalSetup: './tests/support/playwright-global-setup.cjs',
   testDir: './tests/playwright',
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),

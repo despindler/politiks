@@ -13,7 +13,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 4. Auditable topic and beneficiary classification | Complete | 2026-07-14 |
 | 5. MariaDB schema and deterministic publication | Complete | 2026-07-14 |
 | 6. PHP shell, security baseline, and Google authentication | Complete | 2026-07-14 |
-| 7. Public catalogue and personal insight management | Not started | — |
+| 7. Public catalogue and personal insight management | Complete | 2026-07-14 |
 | 8. Insight wizard and parliamentary evidence search | Not started | — |
 | 9. Campaign-context attachments | Not started | — |
 | 10. End-to-end hardening and MVP release | Not started | — |
@@ -256,4 +256,34 @@ Establish the framework-free production runtime under `site/`, secure its HTTP/s
 - The local PHP CLI remains 8.2.30 and lacks OpenSSL, cURL, and `mbstring`. Production JWT signature execution therefore still requires a smoke check on PHP 8.4 with the target extensions; deterministic tests cover its failure boundary and all claim validation.
 - The local database identifies only as MySQL-compatible. MariaDB 10.6.18 host verification remains part of final deployment acceptance.
 - Google login has been exercised with the injected verifier, not a live Google account, so the production authorised origin and client ID must be smoke-tested on the target HTTPS origin.
-- The signed-in "Meine Insights" area is deliberately a shell. Its authorization-correct lifecycle and public catalogue arrive in Milestone 7.
+- Milestone 8 replaces the compact lifecycle editor with the complete evidence wizard while preserving the visibility and ownership boundary established here.
+
+## Milestone 7 — Public catalogue and personal insight management
+
+### Goal
+
+Deliver the public landing catalogue and a complete authorization-correct insight lifecycle before introducing the evidence wizard.
+
+### Work completed
+
+- Added a deterministic paginated public catalogue shared by signed-out and signed-in landing pages, with full-width Bootstrap accordion cards and German loading, empty, error, and incremental-loading states.
+- Added the authenticated “Meine Insights” workspace containing draft, unlisted, and public records, status labels, create/edit controls, and archive behavior.
+- Added prepared-query lifecycle storage with transactionally locked updates, bounded text and pagination, opaque 26-character public IDs, archived-record exclusion, and server-side owner checks returning indistinguishable 404 responses on tampering.
+- Allowed incomplete scope fields only for drafts while retaining the mandatory immutable reference-publication link. Public transition currently requires title and claim; Milestone 8 adds scope/member/evidence publication validation.
+- Added 256-bit random unlisted tokens stored only as SHA-256 hashes. Regenerating an unlisted link invalidates its predecessor; shared pages and APIs emit `noindex, nofollow` headers and the page includes matching robot metadata.
+- Added catalogue hydration for scope, counts, and selected vote evidence while keeping author claims, notes, and official parliamentary fields visually distinct.
+- Added a deterministic two-user browser fixture with all three visibility states and one representative official vote, plus isolated MariaDB lifecycle integration tests.
+- Added Playwright coverage for public isolation, keyboard accordion state, owner lifecycle, anonymous mutation rejection, malformed pagination, unlisted sharing, and reviewed empty/populated desktop/mobile light/dark baselines.
+
+### Verification
+
+- MariaDB lifecycle integration passed create, owner listing, draft isolation, unlisted sharing, public transition, cross-owner mutation denial, and archive removal.
+- Playwright: 26 tests passed across Chromium desktop and mobile, including eight catalogue-state baselines and the existing eight application-shell baselines.
+- Visual review found no unintended overflow, clipping, theme contrast failure, or inaccessible mobile card composition in representative populated, empty, and signed-in states.
+- Clean test schema bootstrap retained 35 statements and 34 tables; fixture publication reconciled all 27 reference tables before deterministic catalogue seeding.
+
+### Known limitations and next implications
+
+- The compact editor covers lifecycle text and visibility only. Scope, members, vote search, evidence ordering, and full publication validation are Milestone 8 work.
+- An unlisted token is intentionally unrecoverable from its stored hash. Saving an unlisted record through the current editor issues a fresh link and explicitly warns that the previous link is invalid.
+- Public evidence rendering is deliberately concise until the wizard supplies the complete vote semantics, member choices, provenance links, and limitations required by the product contract.

@@ -95,6 +95,24 @@ body {
 .process-item h2 { margin-bottom: 0.35rem; font-weight: 700; }
 .process-item p { margin: 0; color: var(--bs-secondary-color); font-size: 0.93rem; }
 .empty-state { padding: clamp(2.25rem, 7vw, 4.5rem); box-shadow: none; }
+.catalogue-status { padding: 2.25rem; color: var(--bs-secondary-color); box-shadow: none; }
+.insight-list { display: grid; gap: 1rem; }
+.insight-list .accordion-item { overflow: hidden; border: 1px solid var(--politiks-border); border-radius: 1.15rem; background: var(--politiks-surface); box-shadow: 0 12px 32px rgba(28, 31, 64, 0.06); }
+.insight-list .accordion-button { align-items: flex-start; padding: 1.3rem; background: transparent; color: var(--bs-body-color); box-shadow: none; }
+.insight-list .accordion-button:not(.collapsed) { color: var(--bs-body-color); background: rgba(var(--politiks-accent-rgb), 0.055); }
+.insight-list .accordion-body { padding: 0 1.3rem 1.3rem; }
+.insight-claim { font-size: 1.04rem; line-height: 1.55; }
+.scope-badge { border: 1px solid var(--politiks-border); background: rgba(var(--politiks-accent-rgb), 0.06); color: var(--bs-body-color); font-weight: 600; }
+.vote-evidence { border-left: 3px solid var(--politiks-accent); padding-left: 1rem; }
+.owner-card { height: 100%; padding: 1.25rem; border: 1px solid var(--politiks-border); border-radius: 1rem; background: rgba(var(--politiks-accent-rgb), 0.025); }
+.owner-card .btn { margin-top: auto; }
+.visibility-draft { color: var(--bs-secondary-color); }
+.visibility-unlisted { color: #b06b00; }
+.visibility-public { color: #16815d; }
+[data-bs-theme="dark"] .visibility-unlisted { color: #ffc46b; }
+[data-bs-theme="dark"] .visibility-public { color: #69d5ad; }
+.share-panel { border: 1px solid rgba(var(--politiks-accent-rgb), 0.25); background: rgba(var(--politiks-accent-rgb), 0.07); }
+.modal-footer .btn { flex: 1 1 0; }
 
 .btn-primary {
   --bs-btn-bg: #5859d9;

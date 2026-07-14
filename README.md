@@ -203,6 +203,16 @@ Public authentication endpoints:
 - `POST /api/google-login` verifies the Google ID token server-side and then creates, reuses, or safely links the local user.
 - `POST /api/logout` destroys the authenticated session.
 
+The landing page loads the public insight catalogue for signed-out and signed-in visitors. Signed-in users additionally manage all of their own drafts, unlisted links, and public work in “Meine Insights”. Catalogue and lifecycle endpoints are:
+
+- `GET /api/insights/public` for the deterministic paginated public catalogue;
+- `GET /api/insights/mine` for the authenticated owner's work;
+- `POST /api/insights`, `PATCH /api/insights/{public-id}`, and `DELETE /api/insights/{public-id}` for CSRF-protected owner-only lifecycle changes;
+- `GET /api/insights/{public-id}` for a public insight or an owner's own record; and
+- `GET /api/shared-insights/{token}` plus `/geteilt/{token}` for opaque unlisted sharing with `noindex` signals.
+
+Draft creation is intentionally allowed before parliamentary scope is complete. Every draft is still pinned immediately to the active immutable reference publication; Milestone 8 supplies and validates its scope, members, and evidence before publication.
+
 Both mutations require `X-CSRF-Token`. Login rotates the session ID. Cookies are HTTP-only, SameSite=Lax, and secure when `APP_URL` is HTTPS. Google JWT verification requires RS256, a matching key ID/signature, the configured audience, a permitted issuer, a future expiration, and a verified unique email.
 
 Apache must allow `.htaccess` overrides for the deployment directory. The committed rules route requests through `index.php`, disable directory listing, and hide environment files, backend PHP, database scripts, logs, and private storage. Do not deploy without those rules taking effect.
@@ -212,6 +222,8 @@ Run the full application verification (unit tests, real test-database auth integ
 ```powershell
 npm.cmd run verify
 ```
+
+Playwright's global setup seeds two deterministic test users and all three visibility states in the test database. It never reads or prints production credentials. The suite covers populated and empty catalogues, keyboard accordions, owner CRUD, unlisted-link indexing protection, and desktop/mobile light/dark baselines.
 
 The production verifier needs OpenSSL and prefers cURL for Google's signing keys, with a verified HTTPS stream fallback. The local PHP CLI is currently 8.2.30 and lacks OpenSSL, cURL, and `mbstring`; production Google login therefore remains a target-host smoke check until PHP 8.4 with the required extensions is used locally.
 
