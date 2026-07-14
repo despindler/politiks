@@ -416,3 +416,26 @@ Make the 363 MB production SQL dump importable through shared-host phpMyAdmin li
 ### Operational limitation
 
 - The split lowers each browser upload to under 8 MB but cannot override a provider's SQL execution-time or database-quota limits. If a host still times out, use its server-side upload directory/import facility or ask the provider to run the dump from the database command line.
+
+## Post-MVP UX work - Wizard waiting feedback
+
+### Goal
+
+Make slow member retrieval, cohort vote calculation, context persistence, and final insight saving unmistakable without permitting duplicate actions or stale asynchronous results.
+
+### Work completed
+
+- Added a reusable accessible busy-state helper with native control disabling, initiating-button spinners, a fixed indeterminate activity strip, polite operation text, and a longer-wait message after five seconds.
+- Added member-card skeletons and `aria-busy` state for member and vote-result regions. Existing vote cards remain visible but subdued during recalculation.
+- Added elapsed-time completion text for operations long enough to be perceptible, while suppressing progress-bar flashes for ordinary fast requests.
+- Serialized rapid member and evidence autosaves so the latest selection is always persisted after an in-flight request.
+- Added abort and request-sequence handling for vote calculation so superseded responses cannot overwrite a newer cohort or search result.
+- Applied the same button/progress behavior to member/vote step transitions, campaign-context saves, initial wizard loading, and final insight saving.
+- Added deterministic Playwright coverage that holds member and vote requests open and checks disabled actions, progress visibility, `aria-busy`, and cleanup.
+
+### Verification status
+
+- JavaScript syntax, PHP template syntax, whitespace checks, and dependency installation passed.
+- Pure PHP suite: 26 passed, 0 failed. The deployment audit passed with 48 tracked runtime files and 27 deployed PHP files linted.
+- The activity strip and member skeletons were rendered with the pinned Chromium build and visually inspected at desktop/mobile sizes in light/dark modes; the fixed status surface remained readable and within the viewport. A standalone Chromium check also exercised the real wizard script against delayed member and vote endpoints and verified one request per action, disabled controls, `aria-busy`, progress visibility, and completion cleanup.
+- Full database-backed browser verification requires the ignored local `.env.test`, which is not present in this checkout; production configuration was not used or changed.

@@ -212,6 +212,71 @@ test('wizard state is unavailable anonymously and to another insight owner', asy
   expect(crossOwnerStatus).toBe(404);
 });
 
+test('slow member and vote requests expose progress and disable duplicate actions', async ({ page }) => {
+  const publicId = await loginAndCreate(page);
+  let releaseMembers;
+  let announceMembers;
+  const membersGate = new Promise((resolve) => { releaseMembers = resolve; });
+  const membersStarted = new Promise((resolve) => { announceMembers = resolve; });
+  let holdMembers = true;
+  let releaseVotes;
+  await page.route('**/api/insights/*/members', async (route) => {
+    if (holdMembers && route.request().method() === 'GET') {
+      holdMembers = false;
+      announceMembers();
+      await membersGate;
+    }
+    await route.continue();
+  });
+
+  try {
+    await page.getByLabel('Rat').selectOption({ label: 'Nationalrat' });
+    await page.getByLabel('Formale Partei').selectOption({ label: 'Beispielpartei Schweiz' });
+    const memberButton = page.getByRole('button', { name: /Mitglieder auswählen/ });
+    await memberButton.click();
+    await membersStarted;
+    await expect(memberButton).toBeDisabled();
+    await expect(memberButton).toContainText('Mitglieder werden geladen');
+    await expect(page.locator('[data-wizard]')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('[data-member-list]')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('[data-wizard-activity]')).toBeVisible();
+    await expect(page.getByRole('progressbar', { name: 'Ladevorgang läuft' })).toBeVisible();
+    releaseMembers();
+    await expect(page.getByRole('tab', { name: /Mitglieder/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-member-list]')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('[data-wizard-activity]')).toBeHidden();
+
+    let announceVotes;
+    const votesGate = new Promise((resolve) => { releaseVotes = resolve; });
+    const votesStarted = new Promise((resolve) => { announceVotes = resolve; });
+    let holdVotes = true;
+    await page.route('**/api/insights/*/votes', async (route) => {
+      if (holdVotes && route.request().method() === 'POST') {
+        holdVotes = false;
+        announceVotes();
+        await votesGate;
+      }
+      await route.continue();
+    });
+    const voteButton = page.getByRole('button', { name: /Abstimmungen untersuchen/ });
+    await voteButton.click();
+    await votesStarted;
+    await expect(voteButton).toBeDisabled();
+    await expect(voteButton).toContainText('Abstimmungen werden berechnet');
+    await expect(page.locator('[data-vote-columns]')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('[data-wizard-activity]')).toContainText('Abstimmungen werden');
+    releaseVotes();
+    await expect(page.getByRole('tab', { name: /Abstimmungen/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-vote-status]')).toContainText('5 Abstimmungen');
+    await expect(page.locator('[data-vote-columns]')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('[data-wizard-activity]')).toBeHidden();
+  } finally {
+    releaseMembers?.();
+    releaseVotes?.();
+    await archiveCurrent(page, publicId);
+  }
+});
+
 test('@visual vote workspace remains composed in light and dark modes', async ({ page }, testInfo) => {
   const publicId = await loginAndCreate(page);
   try {

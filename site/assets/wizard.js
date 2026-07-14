@@ -8,13 +8,22 @@
     evidence: [], votes: [], voteMap: new Map(), query: '', direction: 'all', cohesion: 'all',
     voteType: 'all', topic: 'all', classification: 'all', memberFilter: 'all',
     currentStep: 0, mobileView: 'yes', memberSearch: '', cohortSearch: '', loadingVotes: false,
-    contexts: [],
+    contexts: [], transitionPromise: null, submitting: false,
   };
   const steps = Array.from(root.querySelectorAll('.wizard-step'));
   const tabs = Array.from(root.querySelectorAll('[data-step-target]'));
   let memberSaveTimer;
   let voteLoadTimer;
   let evidenceSaveTimer;
+  let memberSavePromise = null;
+  let pendingMemberIds = null;
+  let evidenceSavePromise = null;
+  let pendingEvidenceIds = null;
+  let voteRequestSequence = 0;
+  let voteAbortController = null;
+  let voteBusyCleanup = null;
+  let activitySequence = 0;
+  let activeActivityToken = 0;
 
   async function api(path, options = {}) {
     const headers = new Headers(options.headers || {});
@@ -36,6 +45,89 @@
     if (className) result.className = className;
     if (text) result.textContent = text;
     return result;
+  }
+
+  function beginActivity(text, slowText = 'Der Vorgang dauert etwas länger – bitte warten.', delay = 180) {
+    const token = ++activitySequence;
+    activeActivityToken = token;
+    const activity = document.querySelector('[data-wizard-activity]');
+    const activityText = document.querySelector('[data-wizard-activity-text]');
+    const show = (message) => {
+      if (activeActivityToken !== token) return;
+      activityText.textContent = message;
+      activity.classList.remove('d-none');
+    };
+    const showTimer = delay > 0 ? window.setTimeout(() => show(text), delay) : null;
+    if (delay === 0) show(text);
+    const slowTimer = window.setTimeout(() => show(slowText), 5000);
+    return () => {
+      if (showTimer !== null) window.clearTimeout(showTimer);
+      window.clearTimeout(slowTimer);
+      if (activeActivityToken === token) {
+        activity.classList.add('d-none');
+        activeActivityToken = 0;
+      }
+    };
+  }
+
+  function disableControls(controls) {
+    const states = Array.from(new Set(controls.filter(Boolean))).map((control) => [control, control.disabled]);
+    states.forEach(([control]) => { control.disabled = true; });
+    return () => states.forEach(([control, disabled]) => { control.disabled = disabled; });
+  }
+
+  function makeButtonBusy(button, text) {
+    if (!button || !text) return () => {};
+    const original = { disabled: button.disabled, html: button.innerHTML };
+    const spinner = node('span', 'spinner-border spinner-border-sm me-2');
+    spinner.setAttribute('aria-hidden', 'true');
+    button.replaceChildren(spinner, document.createTextNode(text));
+    button.classList.add('wizard-busy-button');
+    button.disabled = true;
+    return () => {
+      button.innerHTML = original.html;
+      button.disabled = original.disabled;
+      button.classList.remove('wizard-busy-button');
+    };
+  }
+
+  function startBusy(options) {
+    const controls = typeof options.controls === 'string'
+      ? Array.from(document.querySelectorAll(options.controls))
+      : (options.controls || []);
+    const restoreControls = disableControls(controls);
+    const restoreButton = makeButtonBusy(options.button, options.buttonText);
+    const region = typeof options.region === 'string' ? document.querySelector(options.region) : options.region;
+    if (region) { region.setAttribute('aria-busy', 'true'); region.classList.add('busy-region'); }
+    if (options.formBusy) root.setAttribute('aria-busy', 'true');
+    const finishActivity = options.activityText
+      ? beginActivity(options.activityText, options.slowText, options.activityDelay ?? 180)
+      : () => {};
+    let finished = false;
+    return () => {
+      if (finished) return;
+      finished = true;
+      finishActivity();
+      if (options.formBusy) root.setAttribute('aria-busy', 'false');
+      if (region) { region.setAttribute('aria-busy', 'false'); region.classList.remove('busy-region'); }
+      restoreButton();
+      restoreControls();
+    };
+  }
+
+  async function withBusy(options, work) {
+    const finishBusy = startBusy(options);
+    try {
+      return await work();
+    } finally {
+      finishBusy();
+    }
+  }
+
+  function formatDuration(startedAt) {
+    const duration = performance.now() - startedAt;
+    if (duration < 750) return '';
+    return ` in ${(duration / 1000).toLocaleString('de-CH', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} Sekunden`;
   }
 
   function setSaveStatus(text, icon = 'bi-cloud-check') {
@@ -119,13 +211,47 @@
     setSaveStatus('Rahmen gespeichert');
   }
 
-  async function loadMembers() {
-    const payload = await api(`/api/insights/${publicId}/members`);
-    state.eligible = payload.items;
-    const eligibleIds = new Set(state.eligible.map((member) => member.id));
-    state.selected = new Set(Array.from(state.selected).filter((id) => eligibleIds.has(id)));
-    if (!state.selected.size && state.eligible.length) state.selected = new Set(state.eligible.map((member) => member.id));
-    renderMembers();
+  function renderMemberSkeletons() {
+    const list = document.querySelector('[data-member-list]');
+    list.replaceChildren();
+    for (let index = 0; index < 6; index += 1) {
+      const skeleton = node('div', 'member-option member-skeleton');
+      skeleton.setAttribute('aria-hidden', 'true');
+      list.append(skeleton);
+    }
+    document.querySelector('[data-member-summary]').textContent = 'Mitglieder werden geladen …';
+  }
+
+  async function loadMembers(showBusy = true) {
+    renderMemberSkeletons();
+    const memberList = document.querySelector('[data-member-list]');
+    memberList.setAttribute('aria-busy', 'true');
+    memberList.classList.add('busy-region');
+    const startedAt = performance.now();
+    const work = async () => {
+      try {
+        const payload = await api(`/api/insights/${publicId}/members`);
+        state.eligible = payload.items;
+        const eligibleIds = new Set(state.eligible.map((member) => member.id));
+        state.selected = new Set(Array.from(state.selected).filter((id) => eligibleIds.has(id)));
+        if (!state.selected.size && state.eligible.length) state.selected = new Set(state.eligible.map((member) => member.id));
+        renderMembers();
+        setSaveStatus(`${state.eligible.length} Mitglieder geladen${formatDuration(startedAt)}`);
+      } catch (error) {
+        document.querySelector('[data-member-list]').replaceChildren();
+        document.querySelector('[data-member-summary]').textContent = 'Mitglieder konnten nicht geladen werden.';
+        throw error;
+      } finally {
+        memberList.setAttribute('aria-busy', 'false');
+        memberList.classList.remove('busy-region');
+      }
+    };
+    if (!showBusy) return work();
+    return withBusy({
+      activityText: 'Mitglieder werden geladen …',
+      slowText: 'Das Laden der Mitglieder dauert etwas länger – bitte warten.',
+      controls: '#member-search, [data-members-all], [data-members-none]',
+    }, work);
   }
 
   function memberOption(member, compact = false) {
@@ -176,31 +302,88 @@
 
   async function saveMembers() {
     if (!state.selected.size) throw new Error('Wähle mindestens ein Mitglied aus.');
+    pendingMemberIds = Array.from(state.selected);
+    if (memberSavePromise) return memberSavePromise;
     setSaveStatus('Mitglieder werden gespeichert …', 'bi-cloud-arrow-up');
-    await api(`/api/insights/${publicId}/members`, { method: 'PUT', body: JSON.stringify({ member_ids: Array.from(state.selected) }) });
-    setSaveStatus('Mitglieder gespeichert');
+    memberSavePromise = (async () => {
+      while (pendingMemberIds !== null) {
+        const memberIds = pendingMemberIds;
+        pendingMemberIds = null;
+        await api(`/api/insights/${publicId}/members`, { method: 'PUT', body: JSON.stringify({ member_ids: memberIds }) });
+      }
+      setSaveStatus('Mitglieder gespeichert');
+    })();
+    try {
+      return await memberSavePromise;
+    } finally {
+      memberSavePromise = null;
+    }
   }
 
-  async function loadVotes() {
+  async function loadVotes(showBusy = true) {
+    const voteColumns = document.querySelector('[data-vote-columns]');
     if (!state.selected.size) {
+      voteAbortController?.abort();
+      voteRequestSequence += 1;
+      if (voteBusyCleanup) { voteBusyCleanup(); voteBusyCleanup = null; }
+      state.loadingVotes = false;
       state.votes = [];
+      voteColumns.setAttribute('aria-busy', 'false');
+      voteColumns.classList.remove('busy-region');
       renderVotes();
       document.querySelector('[data-vote-status]').textContent = 'Wähle mindestens ein Mitglied aus.';
       return;
     }
+    const requestId = ++voteRequestSequence;
+    voteAbortController?.abort();
+    voteAbortController = new AbortController();
+    if (voteBusyCleanup) { voteBusyCleanup(); voteBusyCleanup = null; }
+    if (showBusy) {
+      voteBusyCleanup = startBusy({
+        button: document.querySelector('[data-vote-search]'),
+        buttonText: 'Wird berechnet …',
+        activityText: 'Abstimmungen werden für den aktuellen Mitgliederkreis berechnet …',
+        slowText: 'Die Berechnung dauert etwas länger – bitte warten.',
+        controls: '[data-vote-search], [data-cohort-reset]',
+      });
+    }
+    const currentBusyCleanup = voteBusyCleanup;
+    const startedAt = performance.now();
     state.loadingVotes = true;
+    voteColumns.setAttribute('aria-busy', 'true');
+    voteColumns.classList.add('busy-region');
     document.querySelector('[data-vote-status]').textContent = 'Abstimmungen werden für den aktuellen Mitgliederkreis neu berechnet …';
-    const payload = await api(`/api/insights/${publicId}/votes`, {
-      method: 'POST', body: JSON.stringify({ member_ids: Array.from(state.selected), query: state.query }),
-    });
-    state.votes = payload.items;
-    state.votes.forEach((vote) => state.voteMap.set(vote.id, vote));
-    populateVoteFilters();
-    state.loadingVotes = false;
-    document.querySelector('[data-vote-status]').textContent = payload.total
-      ? `${payload.total} Abstimmungen berechnet${payload.limited ? ' · Anzeige auf 100 Ergebnisse begrenzt' : ''}.`
-      : 'Keine Abstimmung entspricht der aktuellen Suche und dem gewählten Rahmen.';
-    renderVotes();
+    try {
+      const payload = await api(`/api/insights/${publicId}/votes`, {
+        method: 'POST',
+        body: JSON.stringify({ member_ids: Array.from(state.selected), query: state.query }),
+        signal: voteAbortController.signal,
+      });
+      if (requestId !== voteRequestSequence) return;
+      state.votes = payload.items;
+      state.votes.forEach((vote) => state.voteMap.set(vote.id, vote));
+      populateVoteFilters();
+      const duration = formatDuration(startedAt);
+      document.querySelector('[data-vote-status]').textContent = payload.total
+        ? `${payload.total} Abstimmungen berechnet${duration}${payload.limited ? ' · Anzeige auf 100 Ergebnisse begrenzt' : ''}.`
+        : `Keine Abstimmung entspricht der aktuellen Suche und dem gewählten Rahmen${duration}.`;
+      renderVotes();
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      if (requestId === voteRequestSequence) {
+        document.querySelector('[data-vote-status]').textContent = 'Abstimmungen konnten nicht berechnet werden.';
+      }
+      throw error;
+    } finally {
+      if (requestId === voteRequestSequence) {
+        state.loadingVotes = false;
+        voteAbortController = null;
+        voteColumns.setAttribute('aria-busy', 'false');
+        voteColumns.classList.remove('busy-region');
+        if (currentBusyCleanup) currentBusyCleanup();
+        if (voteBusyCleanup === currentBusyCleanup) voteBusyCleanup = null;
+      }
+    }
   }
 
   function voteVisible(vote) {
@@ -344,9 +527,22 @@
   }
 
   async function saveEvidence() {
+    pendingEvidenceIds = [...state.evidence];
+    if (evidenceSavePromise) return evidenceSavePromise;
     setSaveStatus('Evidenz wird gespeichert …', 'bi-cloud-arrow-up');
-    await api(`/api/insights/${publicId}/evidence`, { method: 'PUT', body: JSON.stringify({ evidence_ids: state.evidence }) });
-    setSaveStatus('Evidenz gespeichert');
+    evidenceSavePromise = (async () => {
+      while (pendingEvidenceIds !== null) {
+        const evidenceIds = pendingEvidenceIds;
+        pendingEvidenceIds = null;
+        await api(`/api/insights/${publicId}/evidence`, { method: 'PUT', body: JSON.stringify({ evidence_ids: evidenceIds }) });
+      }
+      setSaveStatus('Evidenz gespeichert');
+    })();
+    try {
+      return await evidenceSavePromise;
+    } finally {
+      evidenceSavePromise = null;
+    }
   }
 
   function renderEvidence() {
@@ -498,31 +694,39 @@
     const form = event.currentTarget;
     const submit = form.querySelector('[type="submit"]');
     const errorBox = document.querySelector('[data-context-modal-error]');
-    submit.disabled = true;
+    const startedAt = performance.now();
+    form.setAttribute('aria-busy', 'true');
     errorBox.classList.add('d-none');
     try {
-      const id = form.elements.context_id.value;
-      const type = form.elements.context_type.value;
-      const metadata = contextMetadata(form);
-      if (id) {
-        await api(`/api/insights/${publicId}/contexts/${id}`, { method: 'PATCH', body: JSON.stringify(metadata) });
-      } else if (type === 'image') {
-        const data = new FormData();
-        data.append('image', form.elements.image.files[0]);
-        Object.entries(metadata).forEach(([key, value]) => { if (value) data.append(key, value); });
-        await api(`/api/insights/${publicId}/context-images`, { method: 'POST', body: data });
-      } else {
-        await api(`/api/insights/${publicId}/contexts`, { method: 'POST', body: JSON.stringify({ context_type: type, ...metadata }) });
-      }
-      await loadContexts();
-      bootstrap.Modal.getInstance('#context-modal').hide();
-      setSaveStatus('Kampagnenmaterial gespeichert');
+      await withBusy({
+        button: submit,
+        buttonText: 'Wird gespeichert …',
+        activityText: 'Kampagnenmaterial wird gespeichert …',
+        slowText: 'Das Speichern des Kampagnenmaterials dauert etwas länger – bitte warten.',
+      }, async () => {
+        const id = form.elements.context_id.value;
+        const type = form.elements.context_type.value;
+        const metadata = contextMetadata(form);
+        if (id) {
+          await api(`/api/insights/${publicId}/contexts/${id}`, { method: 'PATCH', body: JSON.stringify(metadata) });
+        } else if (type === 'image') {
+          const data = new FormData();
+          data.append('image', form.elements.image.files[0]);
+          Object.entries(metadata).forEach(([key, value]) => { if (value) data.append(key, value); });
+          await api(`/api/insights/${publicId}/context-images`, { method: 'POST', body: data });
+        } else {
+          await api(`/api/insights/${publicId}/contexts`, { method: 'POST', body: JSON.stringify({ context_type: type, ...metadata }) });
+        }
+        await loadContexts();
+        bootstrap.Modal.getInstance('#context-modal').hide();
+        setSaveStatus(`Kampagnenmaterial gespeichert${formatDuration(startedAt)}`);
+      });
     } catch (error) {
       errorBox.textContent = error.message;
       errorBox.classList.remove('d-none');
       errorBox.focus();
     } finally {
-      submit.disabled = false;
+      form.setAttribute('aria-busy', 'false');
     }
   }
 
@@ -599,81 +803,132 @@
     setSaveStatus('Speichern fehlgeschlagen', 'bi-cloud-slash');
   }
 
-  async function showStep(index, prepare = true) {
+  async function showStep(index, prepare = true, trigger = null) {
     index = Math.max(0, Math.min(index, steps.length - 1));
+    if (state.transitionPromise) return state.transitionPromise;
+    const needsPreparation = prepare && (
+      (index >= 1 && state.currentStep === 0)
+      || (index >= 2 && state.currentStep <= 1)
+    );
+    const transition = async () => {
+      try {
+        if (prepare && index >= 1 && state.currentStep === 0) { await saveScope(); await loadMembers(false); }
+        if (prepare && index >= 2 && state.currentStep <= 1) {
+          if (!state.selected.size) throw new Error('Wähle mindestens ein Mitglied aus.');
+          await saveMembers();
+          state.baseline = new Set(state.selected);
+          await loadVotes(false);
+        }
+        if (index === 4) updateReview();
+      } catch (error) { showError(error); return; }
+      state.currentStep = index;
+      steps.forEach((step, position) => { step.classList.toggle('active', position === index); step.hidden = position !== index; });
+      tabs.forEach((tab, position) => {
+        const active = position === index;
+        tab.classList.toggle('active', active); tab.toggleAttribute('aria-current', active); tab.setAttribute('aria-selected', String(active));
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    if (!needsPreparation) return transition();
+
+    const loadingMembers = index === 1;
+    const message = loadingMembers
+      ? 'Mitglieder werden für den gewählten Rahmen geladen …'
+      : 'Abstimmungen werden für den gewählten Mitgliederkreis berechnet …';
+    const button = trigger?.matches('[data-next], [data-prev]') ? trigger : null;
+    state.transitionPromise = withBusy({
+      button,
+      buttonText: loadingMembers ? 'Mitglieder werden geladen …' : 'Abstimmungen werden berechnet …',
+      activityText: message,
+      slowText: loadingMembers
+        ? 'Das Laden der Mitglieder dauert etwas länger – bitte warten.'
+        : 'Die Berechnung dauert etwas länger – bitte warten.',
+      controls: '[data-step-target], [data-next], [data-prev]',
+      formBusy: true,
+    }, transition);
     try {
-      if (prepare && index >= 1 && state.currentStep === 0) { await saveScope(); await loadMembers(); }
-      if (prepare && index >= 2 && state.currentStep <= 1) {
-        if (!state.selected.size) throw new Error('Wähle mindestens ein Mitglied aus.');
-        await saveMembers();
-        state.baseline = new Set(state.selected);
-        await loadVotes();
-      }
-      if (index === 4) updateReview();
-    } catch (error) { showError(error); return; }
-    state.currentStep = index;
-    steps.forEach((step, position) => { step.classList.toggle('active', position === index); step.hidden = position !== index; });
-    tabs.forEach((tab, position) => {
-      const active = position === index;
-      tab.classList.toggle('active', active); tab.toggleAttribute('aria-current', active); tab.setAttribute('aria-selected', String(active));
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+      return await state.transitionPromise;
+    } finally {
+      state.transitionPromise = null;
+    }
   }
 
   async function submitWizard(event) {
     event.preventDefault();
+    if (state.submitting) return;
     const visibility = document.querySelector('#wizard-visibility').value;
     const errors = validationErrors(visibility === 'public');
     if (errors.length) { showValidation(errors); return; }
     document.querySelector('[data-validation-alert]').classList.add('d-none');
+    state.submitting = true;
+    const startedAt = performance.now();
     try {
-      if (scopeComplete()) await saveScope();
-      if (state.selected.size) await saveMembers();
-      await saveEvidence();
-      const payload = await api(`/api/insights/${publicId}`, {
-        method: 'PATCH', body: JSON.stringify({
-          title: document.querySelector('#wizard-title').value,
-          claim_text: document.querySelector('#wizard-claim').value,
-          explanatory_notes: document.querySelector('#wizard-notes').value,
-          visibility,
-        }),
+      await withBusy({
+        button: event.submitter || root.querySelector('[type="submit"]'),
+        buttonText: 'Insight wird gespeichert …',
+        activityText: 'Insight wird geprüft und gespeichert …',
+        slowText: 'Das Speichern dauert etwas länger – bitte warten.',
+        controls: '[data-step-target], [data-next], [data-prev], [data-context-add]',
+        formBusy: true,
+      }, async () => {
+        if (scopeComplete()) await saveScope();
+        if (state.selected.size) await saveMembers();
+        await saveEvidence();
+        const payload = await api(`/api/insights/${publicId}`, {
+          method: 'PATCH', body: JSON.stringify({
+            title: document.querySelector('#wizard-title').value,
+            claim_text: document.querySelector('#wizard-claim').value,
+            explanatory_notes: document.querySelector('#wizard-notes').value,
+            visibility,
+          }),
+        });
+        if (payload.insight.share_url) {
+          document.querySelector('[data-wizard-share-url]').value = payload.insight.share_url;
+          document.querySelector('[data-wizard-share]').classList.remove('d-none');
+          setSaveStatus(`Freigabelink erstellt${formatDuration(startedAt)}`);
+        } else {
+          setSaveStatus(`Insight gespeichert${formatDuration(startedAt)}`);
+          location.href = '/#meine-insights';
+        }
       });
-      if (payload.insight.share_url) {
-        document.querySelector('[data-wizard-share-url]').value = payload.insight.share_url;
-        document.querySelector('[data-wizard-share]').classList.remove('d-none');
-        setSaveStatus('Freigabelink erstellt');
-      } else {
-        setSaveStatus('Insight gespeichert');
-        location.href = '/#meine-insights';
-      }
     } catch (error) {
       const step = error.code === 'EVIDENCE_WITHOUT_PARTICIPATION' ? 2 : 4;
       await showStep(step, false); showError(error);
+    } finally {
+      state.submitting = false;
     }
   }
 
   async function initialize() {
-    const session = await api('/api/session');
-    if (!session.authenticated) { location.href = '/'; return; }
-    state.csrf = session.csrf_token;
-    const payload = await api(`/api/insights/${publicId}/wizard`);
-    state.insight = payload.insight; state.options = payload.options;
-    state.selected = new Set(payload.insight.members.map((member) => member.id));
-    state.baseline = new Set(state.selected); state.evidence = payload.insight.evidence_ids;
-    initializeScope();
-    document.querySelector('#wizard-title').value = payload.insight.title || '';
-    document.querySelector('#wizard-claim').value = payload.insight.claim_text || '';
-    document.querySelector('#wizard-notes').value = payload.insight.explanatory_notes || '';
-    document.querySelector('#wizard-visibility').value = payload.insight.visibility;
-    document.querySelector('[data-wizard-title]').textContent = payload.insight.title || 'Insight erstellen';
-    await loadContexts();
-    if (scopeComplete()) { await saveScope(); await loadMembers(); if (state.selected.size) await loadVotes(); }
-    await showStep(0, false);
+    await withBusy({
+      activityText: 'Assistent wird geladen …',
+      slowText: 'Das Laden des Assistenten dauert etwas länger – bitte warten.',
+      activityDelay: 0,
+      controls: '[data-step-target], [data-next], [data-prev]',
+      formBusy: true,
+    }, async () => {
+      const session = await api('/api/session');
+      if (!session.authenticated) { location.href = '/'; return; }
+      state.csrf = session.csrf_token;
+      const payload = await api(`/api/insights/${publicId}/wizard`);
+      state.insight = payload.insight; state.options = payload.options;
+      state.selected = new Set(payload.insight.members.map((member) => member.id));
+      state.baseline = new Set(state.selected); state.evidence = payload.insight.evidence_ids;
+      initializeScope();
+      document.querySelector('#wizard-title').value = payload.insight.title || '';
+      document.querySelector('#wizard-claim').value = payload.insight.claim_text || '';
+      document.querySelector('#wizard-notes').value = payload.insight.explanatory_notes || '';
+      document.querySelector('#wizard-visibility').value = payload.insight.visibility;
+      document.querySelector('[data-wizard-title]').textContent = payload.insight.title || 'Insight erstellen';
+      await loadContexts();
+      if (scopeComplete()) { await saveScope(); await loadMembers(false); if (state.selected.size) await loadVotes(false); }
+      await showStep(0, false);
+    });
   }
 
-  tabs.forEach((tab, index) => tab.addEventListener('click', () => showStep(index)));
-  root.querySelectorAll('[data-next]').forEach((button) => button.addEventListener('click', () => showStep(state.currentStep + 1)));
-  root.querySelectorAll('[data-prev]').forEach((button) => button.addEventListener('click', () => showStep(state.currentStep - 1)));
+  tabs.forEach((tab, index) => tab.addEventListener('click', () => showStep(index, true, tab)));
+  root.querySelectorAll('[data-next]').forEach((button) => button.addEventListener('click', () => showStep(state.currentStep + 1, true, button)));
+  root.querySelectorAll('[data-prev]').forEach((button) => button.addEventListener('click', () => showStep(state.currentStep - 1, true, button)));
   root.addEventListener('submit', submitWizard);
   document.querySelector('#member-search').addEventListener('input', (event) => { state.memberSearch = event.target.value; renderMembers(); });
   document.querySelector('[data-members-all]').addEventListener('click', () => { state.selected = new Set(state.eligible.map((member) => member.id)); renderMembers(); });

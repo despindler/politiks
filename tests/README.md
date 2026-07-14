@@ -12,4 +12,6 @@ The Milestone 5 database acceptance sequence is intentionally explicit because i
 
 `npm.cmd run verify:clean` is the release acceptance entry point. It resets only a database configured by a file named exactly `.env.test`, seeds the deterministic reference plus two users and draft/unlisted/public records, then runs the full suite. The main wizard scenario exercises the complete catalogue-to-publication path, including live cohort changes, outlier identification, evidence, campaign context, every visibility state, signed-out catalogue access, and owner editing.
 
+The wizard suite also delays member and vote endpoints deliberately to verify the indeterminate progress display, native button disabling, `aria-busy` regions, restoration after completion, and duplicate-action prevention. Vote recomputation keeps only the latest request eligible to update the page.
+
 Reviewed screenshots cover signed-out and signed-in shells, vote analysis, and campaign-context editing in light and dark modes at both viewports. Full-page signed-out captures cover the complete landing page; signed-in captures focus on the authenticated viewport to avoid Chromium's nondeterministic mobile full-page stitching. `visual-stability.css` affects screenshots only and makes the sticky header static during capture.

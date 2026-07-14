@@ -42,7 +42,11 @@ final class WizardPage
             <div class="col-lg-4"><div class="save-indicator text-lg-end" data-save-status role="status" aria-live="polite"><i class="bi bi-cloud-check me-1" aria-hidden="true"></i>Entwurf geladen</div></div>
         </div>
 
-        <form data-wizard novalidate>
+        <form data-wizard aria-busy="true" novalidate>
+            <div class="wizard-activity" data-wizard-activity role="status" aria-live="polite">
+                <div class="d-flex align-items-center gap-2 mb-2"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span data-wizard-activity-text>Assistent wird geladen …</span></div>
+                <div class="operation-progress" role="progressbar" aria-label="Ladevorgang läuft"><span></span></div>
+            </div>
             <ul class="nav wizard-progress mb-4" role="tablist" aria-label="Schritte zur Erstellung eines Insights">
                 <li class="nav-item"><button class="nav-link active" type="button" role="tab" data-step-target aria-current="step" aria-selected="true" aria-controls="wizard-step-1"><span class="step-index">1</span><span class="step-copy"><span class="step-title"><i class="bi bi-bounding-box me-1" aria-hidden="true"></i>Rahmen</span><span class="step-caption">Partei, Rat und Zeitraum</span></span></button></li>
                 <li class="nav-item"><button class="nav-link" type="button" role="tab" data-step-target aria-selected="false" aria-controls="wizard-step-2"><span class="step-index">2</span><span class="step-copy"><span class="step-title"><i class="bi bi-people me-1" aria-hidden="true"></i>Mitglieder</span><span class="step-caption">Personenkreis festlegen</span></span></button></li>
@@ -73,7 +77,7 @@ final class WizardPage
                     <div class="col-lg-5"><div class="btn-group w-100" role="group" aria-label="Mitgliederauswahl"><button class="btn btn-outline-secondary" type="button" data-members-all>Alle auswählen</button><button class="btn btn-outline-secondary" type="button" data-members-none>Alle abwählen</button></div></div>
                 </div>
                 <p class="selection-summary" data-member-summary role="status" aria-live="polite">Mitglieder werden geladen …</p>
-                <div class="member-grid" data-member-list></div>
+                <div class="member-grid" data-member-list aria-busy="false"></div>
                 <div class="wizard-actions row g-2"><div class="col-sm-5"><button class="btn btn-outline-secondary w-100" type="button" data-prev><i class="bi bi-arrow-left me-1"></i>Zurück</button></div><div class="col-sm-7"><button class="btn btn-primary w-100" type="button" data-next>Abstimmungen untersuchen <i class="bi bi-arrow-right ms-1"></i></button></div></div>
             </section>
 
@@ -92,7 +96,7 @@ final class WizardPage
                 </div>
 
                 <div class="mobile-result-tabs d-md-none mb-3" role="group" aria-label="Ergebnisansicht"><button class="btn btn-outline-success active" type="button" data-mobile-view="yes">Ja <span data-count-yes>0</span></button><button class="btn btn-outline-danger" type="button" data-mobile-view="no">Nein <span data-count-no>0</span></button><button class="btn btn-outline-secondary" type="button" data-mobile-view="neutral">Geteilt <span data-count-neutral>0</span></button></div>
-                <div class="row g-3 vote-columns" data-vote-columns>
+                <div class="row g-3 vote-columns" data-vote-columns aria-busy="false">
                     <div class="col-md-4 vote-column vote-column-yes" data-vote-column="yes"><h3 class="h5"><i class="bi bi-check-circle me-1"></i>Ja <span class="badge text-bg-success" data-count-yes>0</span></h3><div class="vote-card-list" data-votes-yes></div></div>
                     <div class="col-md-4 vote-column vote-column-no" data-vote-column="no"><h3 class="h5"><i class="bi bi-x-circle me-1"></i>Nein <span class="badge text-bg-danger" data-count-no>0</span></h3><div class="vote-card-list" data-votes-no></div></div>
                     <div class="col-md-4 vote-column vote-column-neutral" data-vote-column="neutral"><h3 class="h5"><i class="bi bi-distribute-horizontal me-1"></i>Geteilt / neutral <span class="badge text-bg-secondary" data-count-neutral>0</span></h3><div class="vote-card-list" data-votes-neutral></div></div>
