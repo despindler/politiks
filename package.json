@@ -1,0 +1,20 @@
+{
+  "name": "politiks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser verification for the Politiks parliamentary insight application.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:visual": "playwright test --grep @visual",
+    "playwright:install": "playwright install chromium",
+    "test:php": "php tests/php/run.php",
+    "verify": "npm run test:php && npm test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

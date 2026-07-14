@@ -1,0 +1,31 @@
+# Secrets and local environment configuration
+.env*
+!.env.example
+site/.env
+
+# Generated databases and runtime data
+*.sqlite
+*.sqlite3
+source/**/*.part
+site/storage/uploads/*
+!site/storage/uploads/.gitkeep
+site/storage/logs/*
+!site/storage/logs/.gitkeep
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+
+# Node and Playwright
+node_modules/
+playwright-report/
+test-results/
+blob-report/
+
+# IDE and operating-system files
+.DS_Store
+Thumbs.db
