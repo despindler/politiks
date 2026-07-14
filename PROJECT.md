@@ -16,7 +16,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 7. Public catalogue and personal insight management | Complete | 2026-07-14 |
 | 8. Insight wizard and parliamentary evidence search | Complete | 2026-07-14 |
 | 9. Campaign-context attachments | Complete | 2026-07-14 |
-| 10. End-to-end hardening and MVP release | Not started | — |
+| 10. End-to-end hardening and MVP release | Complete | 2026-07-14 |
 
 ## Working decisions
 
@@ -356,3 +356,40 @@ Let authors add campaign material as clearly labeled interpretive context withou
 - YouTube input is deliberately narrow. Unsupported hosts may be stored only when the author explicitly chooses the ordinary Weblink type; they never become embeds.
 - Image responses use private no-store caching for a simple authorization model. Production-scale caching or signed short-lived media URLs remain future work.
 - Archived insights retain upload files. A future hard-delete/retention job must delete database rows and their protected files together and should be exercised in deployment backups before activation.
+
+## Milestone 10 — End-to-end hardening and deployable MVP release
+
+### Goal
+
+Prove the complete MVP from a clean database, harden the production package for the stated shared-hosting environment, and leave an exact German deployment, backup, rollback, and target-host acceptance procedure.
+
+### Work completed
+
+- Added `DEPLOYMENT.md`, covering PHP 8.4/extension and Apache requirements, release packaging with `index.php` at the archive root, filesystem permissions, production `.env`, Google Web-client origins, MariaDB schema/reference publication, HTTPS smoke checks, backups, restoration, and rollback.
+- Added `MVP_CHECKLIST.md`, separating automated data-quality/security evidence from the production-host checks that still require the actual Apache/PHP/MariaDB/Google environment.
+- Added a placeholder-only deployable `site/.env.example`. Production configuration now requires HTTPS and a Google client ID, rejects the test-auth switch, suppresses displayed errors, emits HSTS and COOP in addition to the existing CSP/security headers, and applies bounded static-asset cache/MIME headers through Apache.
+- Removed the local PHP router and deterministic Google verifier from `site/`. Both now live under `tests/support/`; test authentication additionally requires an explicit adapter path. No test credential or development router is present in the deployable tree.
+- Added `scripts/audit_deployment.php`, which inventories the versioned runtime, requires the front controller/schema/storage roots, lints every deployed PHP file, verifies core Apache deny/header rules, and rejects test credentials, development tooling, local routers, source snapshots, and SQLite/database artifacts.
+- Added the guarded `npm run verify:clean` release command. It accepts only a file named `.env.test` plus an explicit destructive flag, resets/schema-loads the test database, installs deterministic reference data plus two users and every visibility state, then runs the complete suite.
+- Corrected Windows absolute-path handling in schema/publication CLI commands and made the clean verifier locate the installed Node/npm CLI without shell-specific quoting.
+- Expanded the primary wizard scenario into the complete acceptance path: signed-out catalogue, test login, historical scope/members, cohort regrouping, filters, vote semantics, outlier, exact search/evidence, campaign context, draft, unlisted link and isolation, public transition, signed-out catalogue, re-login, and owner edit.
+- Serialized the stateful browser suite so a deliberately public acceptance record cannot mutate catalogue visual fixtures concurrently. Cleanup is bounded and waits for restored wizard state before archiving.
+- Re-captured and reviewed the four campaign-context visual baselines with deterministic image-region rendering after independently verifying the authorized image stream.
+
+### Verification
+
+- `npm.cmd run verify:clean` completed from a reset `.env.test` database: 40 idempotent schema statements, 34 tables, and the deterministic reference/two-user/all-visibility seed.
+- Pure PHP suite: 24 passed, including production HTTPS, secure-cookie, and production test-auth rejection contracts.
+- Authentication, insight lifecycle, wizard, and campaign-context MariaDB suites all passed, including ownership/privacy, publication validation, cohort semantics, upload validation, and protected media.
+- Deployment audit passed with 48 tracked runtime files and 27 deployed PHP files linted; test credentials and development artifacts were absent.
+- Playwright ran deterministically with one worker: all 38 desktop/mobile Chromium behavior and visual cases passed in 1.5 minutes.
+- The critical path passed at both viewports. Draft and unlisted records stayed out of the public catalogue and the predictable insight API; the opaque share link worked; public transition appeared to a signed-out visitor; owner editing remained available after re-login.
+- Reviewed Shell, catalogue, vote-workspace, and campaign-context references cover desktop/mobile in light/dark modes without unintended overflow, clipping, overlapping controls, illegible contrast, or theme flash.
+
+### Known limitations and production acceptance
+
+- No external target host was mutated during this milestone. The allowed alternative acceptance is documented completely in `DEPLOYMENT.md`: confirm PHP 8.4, MariaDB 10.6.18, extensions, `.htaccess`, HTTPS/HSTS, writable private storage, cache/security headers, and a real Google login on the deployed origin.
+- The local CLI is PHP 8.2.30 and still cannot execute the target OpenSSL/cURL/`mbstring` combination; deterministic verifier tests cover the contract, but the real Google/JWKS path remains a target-host smoke check.
+- The local database reports itself as MySQL-compatible rather than MariaDB. All schema and integration checks pass, but the exact MariaDB 10.6.18 server family must be recorded on the host.
+- The clean acceptance uses the deliberately synthetic browser reference dataset. Production still requires a freshly rebuilt, classified, checksum-verified full Swiss snapshot and successful `verify_reference_publication.php` reconciliation.
+- Backup/restore, provider permissions, and release switching cannot be proven without the host. They are explicit unchecked operational items in `MVP_CHECKLIST.md`, not silently treated as complete.

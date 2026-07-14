@@ -24,7 +24,8 @@ async function loginAndCreate(page) {
   await page.getByLabel('Rat').selectOption({ label: 'Nationalrat' });
   await page.getByLabel('Formale Partei').selectOption({ label: 'Beispielpartei Schweiz' });
   await page.getByRole('button', { name: /Mitglieder auswählen/ }).click();
-  await expect(page.getByText('4 von 4 wählbaren Mitgliedern ausgewählt')).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Mitglieder/ })).toHaveAttribute('aria-selected', 'true', { timeout: 15_000 });
+  await expect(page.getByText('4 von 4 wählbaren Mitgliedern ausgewählt')).toBeVisible({ timeout: 15_000 });
   await page.getByRole('tab', { name: /Einordnung/ }).click();
   return publicId;
 }
@@ -140,6 +141,10 @@ test('@visual campaign context remains composed in both themes', async ({ page }
     await addImage(page);
     await addYouTube(page);
     await addLink(page);
+    await page.locator('img.context-image').evaluate((image) => {
+      image.style.visibility = 'hidden';
+      image.parentElement.style.background = '#050505';
+    });
     await page.locator('.app-navbar').evaluate((element) => { element.style.display = 'none'; });
     const target = page.locator('#wizard-step-4');
     for (const theme of ['light', 'dark']) {

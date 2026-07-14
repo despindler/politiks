@@ -1,4 +1,5 @@
 const { defineConfig, devices } = require('@playwright/test');
+const path = require('node:path');
 const { loadTestEnvironment } = require('./tests/support/load-test-environment.cjs');
 
 loadTestEnvironment();
@@ -11,7 +12,8 @@ module.exports = defineConfig({
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Stateful publication scenarios intentionally share one deterministic test database.
+  workers: 1,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL,
@@ -32,7 +34,7 @@ module.exports = defineConfig({
     },
   ],
   webServer: {
-    command: 'php -S 127.0.0.1:8080 -t site site/router.php',
+    command: 'php -S 127.0.0.1:8080 -t site tests/support/router.php',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 15_000,
@@ -42,6 +44,7 @@ module.exports = defineConfig({
       ...process.env,
       APP_ENV: 'test',
       POLITIKS_TEST_AUTH: 'enabled',
+      POLITIKS_TEST_AUTH_BOOTSTRAP: path.resolve(__dirname, 'tests/support/TestGoogleTokenVerifier.php'),
       GOOGLE_CLIENT_ID: 'playwright-client.apps.googleusercontent.com',
     },
   },

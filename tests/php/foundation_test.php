@@ -5,6 +5,8 @@ declare(strict_types=1);
 return [
     'deployment root contains index.php' => static function (): void {
         assertTrue(is_file(__DIR__ . '/../../site/index.php'), 'site/index.php must exist.');
+        assertTrue(!is_file(__DIR__ . '/../../site/router.php'), 'The local PHP router must not be deployed.');
+        assertTrue(!is_file(__DIR__ . '/../../site/backend/Auth/TestGoogleTokenVerifier.php'), 'The test verifier must not be deployed.');
     },
     'environment example contains required keys' => static function (): void {
         $content = file_get_contents(__DIR__ . '/../../.env.example');

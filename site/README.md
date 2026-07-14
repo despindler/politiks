@@ -8,11 +8,13 @@ Production secrets belong in ignored `site/.env`. The committed Apache rules den
 
 Runtime structure:
 
-- `index.php` and `router.php`: Apache front controller and local PHP-server router.
+- `index.php`: Apache front controller and mandatory document-root entry point.
 - `backend/`: framework-free configuration, HTTP, session/CSRF, persistence, and Google token verification; never public.
 - `assets/`: local application, Bootstrap 5.3.8, and Bootstrap Icons 1.13.1 assets.
 - `database/`: protected schema contract.
 - `storage/`: protected runtime cache, log, and upload roots.
 - `.htaccess`: routing and deny rules for every internal path above.
+
+The PHP built-in-server router and deterministic authentication adapter live under repository-level `tests/support/` and are deliberately absent from this deployment directory. `.env.example` is a placeholder-only production template; copy it to ignored `.env` on the host.
 
 Google Identity Services remains remotely hosted because Google does not support self-hosting that library. All ordinary UI assets are local. The response CSP permits only the narrowly required Google script/style/frame/connect endpoints, the Google profile-image host, and generated privacy-enhanced YouTube frames in addition to same-origin resources. User-supplied hosts never enter the CSP or become arbitrary embeds.

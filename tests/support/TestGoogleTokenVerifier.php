@@ -11,10 +11,10 @@ final class TestGoogleTokenVerifier implements GoogleTokenVerifier
         if (preg_match('/^playwright-valid-google-credential(?:-([a-z0-9-]{1,40}))?$/D', $credential, $matches) !== 1) {
             throw new GoogleAuthException('INVALID_GOOGLE_TOKEN', 'Das Google-Anmeldetoken ist ungültig.');
         }
-        $identity = $matches[1] ?? 'default';
+        $identity = $matches[1] ?? null;
         return [
-            'sub' => 'playwright-google-subject-' . $identity,
-            'email' => sprintf('playwright.%s@example.test', $identity),
+            'sub' => $identity === null ? 'playwright-google-subject' : 'playwright-google-subject-' . $identity,
+            'email' => $identity === null ? 'playwright.user@example.test' : sprintf('playwright.%s@example.test', $identity),
             'email_verified' => true,
             'name' => 'Mara Muster',
             'picture' => null,

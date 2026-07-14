@@ -22,7 +22,8 @@ async function configureScope(page) {
   await page.getByLabel('Rat').selectOption({ label: 'Nationalrat' });
   await page.getByLabel('Formale Partei').selectOption({ label: 'Beispielpartei Schweiz' });
   await page.getByRole('button', { name: /Mitglieder auswählen/ }).click();
-  await expect(page.getByText('4 von 4 wählbaren Mitgliedern ausgewählt')).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Mitglieder/ })).toHaveAttribute('aria-selected', 'true', { timeout: 15_000 });
+  await expect(page.getByText('4 von 4 wählbaren Mitgliedern ausgewählt')).toBeVisible({ timeout: 15_000 });
 }
 
 async function archiveCurrent(page, publicId) {
@@ -30,6 +31,7 @@ async function archiveCurrent(page, publicId) {
     const session = await fetch('/api/session').then((response) => response.json());
     return fetch(`/api/insights/${id}`, {
       method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token }, body: '{}',
+      signal: AbortSignal.timeout(15_000),
     }).then((response) => response.status);
   }, publicId);
   expect(status).toBe(200);
@@ -43,10 +45,11 @@ test.beforeEach(async ({ page }) => {
   await stubGoogleIdentity(page);
 });
 
-test('wizard synchronizes the cohort, regroups votes, retains evidence, resumes, and publishes', async ({ page }, testInfo) => {
-  test.setTimeout(60_000);
+test('MVP critical path explores a cohort, adds evidence and context, then moves through every visibility', async ({ page, browser }, testInfo) => {
+  test.setTimeout(90_000);
   const publicId = await loginAndCreate(page);
-  const title = `Kohortenanalyse ${testInfo.project.name}`;
+  const title = `Kohortenanalyse ${testInfo.project.name} ${publicId.slice(0, 6)}`;
+  let archived = false;
   try {
     await configureScope(page);
     await page.getByRole('button', { name: /Abstimmungen untersuchen/ }).click();
@@ -114,25 +117,71 @@ test('wizard synchronizes the cohort, regroups votes, retains evidence, resumes,
     await page.getByLabel('Titel').fill(title);
     await page.getByLabel('Aussage').fill('Die ausgewählten Abstimmungen zeigen, wie sich die Bewertung mit dem betrachteten Mitgliederkreis verändert.');
     await page.getByLabel('Erläuterung und Einschränkungen').fill('Die Richtung bezieht sich ausschliesslich auf den gewählten Mitgliederkreis.');
+    await page.getByRole('button', { name: 'Weblink' }).click();
+    const contextModal = page.locator('#context-modal');
+    await contextModal.getByLabel('Webadresse').fill('https://example.org/wahlprogramm');
+    await contextModal.getByLabel('Bezeichnung').fill('Wahlprogramm als Kontext');
+    await contextModal.getByLabel('Urheberangabe').fill('Beispielpartei Schweiz');
+    await contextModal.getByRole('button', { name: 'Speichern' }).click();
+    await expect(contextModal).toBeHidden();
     await page.getByRole('tab', { name: /Prüfen/ }).click();
     await expect(page.locator('[data-review-summary]')).toContainText('1 Abstimmungen ausgewählt');
+    await expect(page.locator('[data-review-summary]')).toContainText('1 Elemente · nutzerbereitgestellt');
     await page.getByRole('button', { name: 'Insight speichern' }).click();
     await expect(page).toHaveURL(/\/#meine-insights$/);
 
     const card = page.locator('[data-mine-list] article.owner-card').filter({ hasText: title });
     await expect(card).toBeVisible();
+    await expect(card).toContainText('Entwurf');
+    await expect(page.locator('[data-public-list]').getByText(title)).toHaveCount(0);
     await card.getByRole('link', { name: 'Im Assistenten bearbeiten' }).click();
     await page.getByRole('tab', { name: /Abstimmungen/ }).click();
     await expect(page.locator('[data-evidence-count]')).toHaveText('1');
     await page.getByRole('tab', { name: /Einordnung/ }).click();
     await expect(page.getByLabel('Titel')).toHaveValue(title);
     await page.getByRole('tab', { name: /Prüfen/ }).click();
+    await page.getByLabel('Sichtbarkeit').selectOption('unlisted');
+    await page.getByRole('button', { name: 'Insight speichern' }).click();
+    const shareInput = page.locator('[data-wizard-share-url]');
+    await expect(shareInput).toHaveValue(/\/geteilt\/[A-Za-z0-9_-]{43}$/);
+    const shareUrl = await shareInput.inputValue();
+
+    const guestContext = await browser.newContext();
+    const guest = await guestContext.newPage();
+    try {
+      await guest.goto(shareUrl);
+      await expect(guest.getByText(title)).toBeVisible();
+      await expect(guest.getByText('Kampagnenkontext · nutzerbereitgestellt')).toBeVisible();
+      await expect(guest.getByText('Wahlprogramm als Kontext')).toBeVisible();
+      expect((await guest.request.get(`/api/insights/${publicId}`)).status()).toBe(404);
+      const publicPayload = await guest.request.get('/api/insights/public').then((response) => response.json());
+      expect(publicPayload.items.some((item) => item.public_id === publicId)).toBe(false);
+    } finally {
+      await guestContext.close();
+    }
+
     await page.getByLabel('Sichtbarkeit').selectOption('public');
     await page.getByRole('button', { name: 'Insight speichern' }).click();
     await expect(page).toHaveURL(/\/#meine-insights$/);
     await expect(page.locator('[data-public-list]').getByText(title)).toBeVisible();
-  } finally {
+    const logout = page.getByRole('button', { name: 'Abmelden' });
+    if (await logout.isHidden()) {
+      await page.getByRole('button', { name: 'Navigation öffnen' }).click();
+    }
+    await logout.click();
+    await expect(page.getByRole('button', { name: 'Mit Google anmelden' })).toBeVisible();
+    await expect(page.locator('[data-public-list]').getByText(title)).toBeVisible();
+    await page.getByRole('button', { name: 'Mit Google anmelden' }).click();
+    const publishedCard = page.locator('[data-mine-list] article.owner-card').filter({ hasText: title });
+    await publishedCard.getByRole('link', { name: 'Im Assistenten bearbeiten' }).click();
+    await expect(page).toHaveURL(new RegExp(`/insights/${publicId}/bearbeiten$`));
+    await expect(page.locator('[data-wizard-title]')).toHaveText(title);
+    await expect(page.getByRole('tab', { name: /Rahmen/ })).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 });
+    await page.waitForLoadState('networkidle');
     await archiveCurrent(page, publicId);
+    archived = true;
+  } finally {
+    if (!archived) await archiveCurrent(page, publicId);
   }
 });
 

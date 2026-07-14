@@ -45,7 +45,11 @@ final class Config
             throw new RuntimeException('APP_ENV ist ungültig.');
         }
         $appUrl = rtrim($required('APP_URL'), '/');
-        if (filter_var($appUrl, FILTER_VALIDATE_URL) === false) {
+        $appUrlParts = parse_url($appUrl);
+        if (filter_var($appUrl, FILTER_VALIDATE_URL) === false || !is_array($appUrlParts)
+            || !in_array(strtolower((string) ($appUrlParts['scheme'] ?? '')), ['http', 'https'], true)
+            || isset($appUrlParts['user']) || isset($appUrlParts['pass'])
+            || isset($appUrlParts['query']) || isset($appUrlParts['fragment'])) {
             throw new RuntimeException('APP_URL ist ungültig.');
         }
         $timezone = $required('APP_TIMEZONE');
@@ -83,6 +87,17 @@ final class Config
         $uploadMaxBytes = $required('UPLOAD_MAX_BYTES');
         if (!ctype_digit($uploadMaxBytes) || (int) $uploadMaxBytes < 1024 || (int) $uploadMaxBytes > 20_971_520) {
             throw new RuntimeException('UPLOAD_MAX_BYTES muss zwischen 1024 und 20971520 liegen.');
+        }
+        if ($environment === 'production') {
+            if (strtolower((string) $appUrlParts['scheme']) !== 'https') {
+                throw new RuntimeException('APP_URL muss in der Produktion HTTPS verwenden.');
+            }
+            if ($clientId === null) {
+                throw new RuntimeException('GOOGLE_CLIENT_ID fehlt für die Produktion.');
+            }
+            if ($testFlag) {
+                throw new RuntimeException('Test-Authentifizierung ist in der Produktion verboten.');
+            }
         }
 
         date_default_timezone_set($timezone);

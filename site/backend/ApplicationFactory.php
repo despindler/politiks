@@ -21,6 +21,9 @@ final class ApplicationFactory
     public static function create(): Application
     {
         $config = Config::load();
+        error_reporting(E_ALL);
+        ini_set('display_errors', $config->environment === 'production' ? '0' : '1');
+        ini_set('log_errors', '1');
         $session = new NativeSession($config);
         $database = new Database($config);
         $users = new MariaDbUserStore($database->connection(...));

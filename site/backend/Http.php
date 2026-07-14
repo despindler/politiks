@@ -65,12 +65,14 @@ final class Http
         ];
         if ($config->environment === 'production' && $config->usesSecureCookies()) {
             $policy[] = 'upgrade-insecure-requests';
+            header('Strict-Transport-Security: max-age=31536000');
         }
         header('Content-Security-Policy: ' . implode('; ', $policy));
         header('Referrer-Policy: strict-origin-when-cross-origin');
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: DENY');
         header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+        header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
     }
 }
 

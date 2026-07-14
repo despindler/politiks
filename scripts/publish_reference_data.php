@@ -19,12 +19,14 @@ $testKeySuffix = null;
 foreach (array_slice($argv, 1) as $argument) {
     if (str_starts_with($argument, '--env=')) {
         $candidate = substr($argument, 6);
-        $envPath = preg_match('~^(?:[A-Za-z]:[\\/]|[\\/])~', $candidate) === 1
+        $envPath = str_starts_with($candidate, '/') || str_starts_with($candidate, '\\')
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $candidate) === 1
             ? $candidate
             : $root . DIRECTORY_SEPARATOR . $candidate;
     } elseif (str_starts_with($argument, '--sqlite=')) {
         $candidate = substr($argument, 9);
-        $sqlitePath = preg_match('~^(?:[A-Za-z]:[\\/]|[\\/])~', $candidate) === 1
+        $sqlitePath = str_starts_with($candidate, '/') || str_starts_with($candidate, '\\')
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $candidate) === 1
             ? $candidate
             : $root . DIRECTORY_SEPARATOR . $candidate;
     } elseif (str_starts_with($argument, '--simulate-failure-after=')) {

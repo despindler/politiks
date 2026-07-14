@@ -9,6 +9,8 @@ The authoritative product context and implementation sequence are in:
 - `.agents/PLAN.md`
 - `PROJECT.md`
 
+Das vollständige deutschsprachige Produktionshandbuch steht in `DEPLOYMENT.md`; die finale Datenqualitäts-, Sicherheits- und Release-Prüfliste steht in `MVP_CHECKLIST.md`.
+
 ## Supported environment
 
 - Python 3.11 or newer
@@ -185,7 +187,7 @@ For local development, point the application at the ignored test environment and
 
 ```powershell
 $env:POLITIKS_ENV_FILE = (Resolve-Path .env.test).Path
-php -S 127.0.0.1:8080 -t site site/router.php
+php -S 127.0.0.1:8080 -t site tests/support/router.php
 ```
 
 Production uses `site/.env`. Start from `.env.example`, set `APP_ENV=production`, use the public HTTPS URL as `APP_URL`, generate an unpredictable `APP_SECRET`, and provide the MariaDB and Google client settings. Generate a suitable application secret without printing any other configuration:
@@ -254,13 +256,21 @@ Owner context endpoints are:
 
 Both mutations require `X-CSRF-Token`. Login rotates the session ID. Cookies are HTTP-only, SameSite=Lax, and secure when `APP_URL` is HTTPS. Google JWT verification requires RS256, a matching key ID/signature, the configured audience, a permitted issuer, a future expiration, and a verified unique email.
 
-Apache must allow `.htaccess` overrides for the deployment directory. The committed rules route requests through `index.php`, disable directory listing, and hide environment files, backend PHP, database scripts, logs, and private storage. Do not deploy without those rules taking effect.
+Apache must allow `.htaccess` overrides for the deployment directory. The committed rules route requests through `index.php`, disable directory listing, hide environment files, backend PHP, database scripts, logs, and private storage, and set bounded cache headers on static assets. Production configuration requires an HTTPS `APP_URL`, emits HSTS, forbids test authentication, and suppresses error details. Do not deploy without those rules taking effect.
 
 Run the full application verification (unit tests, real test-database auth integration, API/browser behavior, and visual baselines):
 
 ```powershell
 npm.cmd run verify
 ```
+
+For release acceptance, explicitly reset only the dedicated `.env.test` database, install the deterministic two-user/all-visibility fixture, and run the entire suite from that clean state:
+
+```powershell
+npm.cmd run verify:clean
+```
+
+This command is destructive only to the database named by a file whose basename is exactly `.env.test`; it requires the explicit reset flag internally. Run the deployable-boundary audit alone with `npm.cmd run test:deploy`.
 
 Playwright's global setup seeds two deterministic test users, all three visibility states, and the synthetic vote-workspace fixture in the test database. It never reads or prints production credentials. The suite covers populated and empty catalogues, keyboard accordions, owner CRUD, unlisted-link indexing protection, the complete wizard, live cohort changes, vote inspection, campaign-context validation/presentation, publication, and desktop/mobile light/dark baselines.
 
