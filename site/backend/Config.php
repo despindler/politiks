@@ -20,6 +20,7 @@ final class Config
         public readonly ?string $googleClientId,
         public readonly string $googleJwksUrl,
         public readonly string $storagePath,
+        public readonly int $uploadMaxBytes,
         public readonly bool $testAuthEnabled,
     ) {
     }
@@ -79,6 +80,10 @@ final class Config
             throw new RuntimeException('GOOGLE_JWKS_URL muss eine HTTPS-URL sein.');
         }
         $testFlag = Environment::value($values, 'POLITIKS_TEST_AUTH', '') === 'enabled';
+        $uploadMaxBytes = $required('UPLOAD_MAX_BYTES');
+        if (!ctype_digit($uploadMaxBytes) || (int) $uploadMaxBytes < 1024 || (int) $uploadMaxBytes > 20_971_520) {
+            throw new RuntimeException('UPLOAD_MAX_BYTES muss zwischen 1024 und 20971520 liegen.');
+        }
 
         date_default_timezone_set($timezone);
         return new self(
@@ -98,6 +103,7 @@ final class Config
             $clientId,
             $jwksUrl,
             $siteRoot . '/storage',
+            (int) $uploadMaxBytes,
             $environment === 'test' && $testFlag,
         );
     }

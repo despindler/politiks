@@ -15,4 +15,4 @@ Runtime structure:
 - `storage/`: protected runtime cache, log, and upload roots.
 - `.htaccess`: routing and deny rules for every internal path above.
 
-Google Identity Services remains remotely hosted because Google does not support self-hosting that library. All ordinary UI assets are local. The response CSP permits only the narrowly required Google script/style/frame/connect endpoints and the Google profile-image host in addition to same-origin resources.
+Google Identity Services remains remotely hosted because Google does not support self-hosting that library. All ordinary UI assets are local. The response CSP permits only the narrowly required Google script/style/frame/connect endpoints, the Google profile-image host, and generated privacy-enhanced YouTube frames in addition to same-origin resources. User-supplied hosts never enter the CSP or become arbitrary embeds.

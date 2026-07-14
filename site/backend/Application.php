@@ -9,6 +9,7 @@ use Politiks\App\Auth\GoogleAuthException;
 use Politiks\App\Insight\InsightException;
 use Politiks\App\Insight\InsightStore;
 use Politiks\App\Insight\WizardStore;
+use Politiks\App\Insight\CampaignContextStore;
 use Politiks\App\Security\Csrf;
 use Throwable;
 
@@ -20,6 +21,7 @@ final class Application
         private readonly Csrf $csrf,
         private readonly InsightStore $insights,
         private readonly WizardStore $wizard,
+        private readonly CampaignContextStore $campaignContexts,
     ) {
     }
 
@@ -53,6 +55,22 @@ final class Application
                 header('Cache-Control: no-store');
                 header('X-Robots-Tag: noindex, nofollow');
                 echo WizardPage::render($matches[1]);
+                exit;
+            }
+            if ($method === 'GET' && preg_match('~^/media/campaign-context/([1-9][0-9]*)$~', $path, $matches) === 1) {
+                $user = $this->auth->currentUser();
+                $share = $_GET['share'] ?? null;
+                $image = $this->campaignContexts->imageForViewer(
+                    (int) $matches[1],
+                    $user['id'] ?? null,
+                    is_string($share) ? $share : null,
+                );
+                header('Content-Type: ' . $image['media_type']);
+                header('Content-Length: ' . $image['byte_count']);
+                header('Content-Disposition: inline');
+                header('Cache-Control: private, no-store');
+                header('ETag: "' . $image['sha256'] . '"');
+                readfile($image['path']);
                 exit;
             }
             if ($method === 'GET' && $path === '/api/auth-config') {
@@ -130,6 +148,52 @@ final class Application
                 Http::json(['ok' => true] + $this->wizard->votes(
                     $user['id'], $matches[1], $body['member_ids'] ?? null, $body['query'] ?? ''
                 ));
+            }
+            if ($method === 'GET' && preg_match('~^/api/insights/([a-f0-9]{26})/contexts$~', $path, $matches) === 1) {
+                $user = $this->requireUser();
+                Http::json(['ok' => true, 'items' => $this->campaignContexts->ownerContexts($user['id'], $matches[1])]);
+            }
+            if ($method === 'POST' && preg_match('~^/api/insights/([a-f0-9]{26})/contexts$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                Http::json(['ok' => true, 'item' => $this->campaignContexts->createRemote($user['id'], $matches[1], Http::jsonBody())], 201);
+            }
+            if ($method === 'POST' && preg_match('~^/api/insights/([a-f0-9]{26})/context-images$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                $contentType = strtolower(trim(explode(';', $_SERVER['CONTENT_TYPE'] ?? '')[0]));
+                if ($contentType !== 'multipart/form-data') {
+                    throw new HttpFailure(415, 'CONTENT_TYPE_REQUIRED', 'Multipart-Formulardaten sind erforderlich.');
+                }
+                $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+                if ($length > $this->config->uploadMaxBytes + 100_000) {
+                    throw new HttpFailure(413, 'REQUEST_TOO_LARGE', 'Das Bild ist zu gross.');
+                }
+                $file = $_FILES['image'] ?? null;
+                if (!is_array($file)) {
+                    throw new HttpFailure(422, 'IMAGE_REQUIRED', 'Wähle eine Bilddatei aus.');
+                }
+                Http::json([
+                    'ok' => true,
+                    'item' => $this->campaignContexts->uploadImage($user['id'], $matches[1], $file, $_POST),
+                ], 201);
+            }
+            if ($method === 'PUT' && preg_match('~^/api/insights/([a-f0-9]{26})/contexts/order$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                $body = Http::jsonBody();
+                Http::json(['ok' => true, 'items' => $this->campaignContexts->reorder($user['id'], $matches[1], $body['context_ids'] ?? null)]);
+            }
+            if ($method === 'PATCH' && preg_match('~^/api/insights/([a-f0-9]{26})/contexts/([1-9][0-9]*)$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                Http::json(['ok' => true, 'item' => $this->campaignContexts->update($user['id'], $matches[1], (int) $matches[2], Http::jsonBody())]);
+            }
+            if ($method === 'DELETE' && preg_match('~^/api/insights/([a-f0-9]{26})/contexts/([1-9][0-9]*)$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                $this->campaignContexts->delete($user['id'], $matches[1], (int) $matches[2]);
+                Http::json(['ok' => true]);
             }
             if ($method === 'GET' && preg_match('~^/api/insights/([a-f0-9]{26})$~', $path, $matches) === 1) {
                 $user = $this->auth->currentUser();

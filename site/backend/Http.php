@@ -61,7 +61,7 @@ final class Http
             "font-src 'self'",
             "img-src 'self' data: https://lh3.googleusercontent.com",
             "connect-src 'self' https://accounts.google.com/gsi/",
-            "frame-src https://accounts.google.com/gsi/",
+            "frame-src https://accounts.google.com/gsi/ https://www.youtube-nocookie.com",
         ];
         if ($config->environment === 'production' && $config->usesSecureCookies()) {
             $policy[] = 'upgrade-insecure-requests';

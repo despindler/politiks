@@ -234,6 +234,24 @@ Authenticated wizard endpoints are owner-only and CSRF-protected on mutation:
 
 The browser test fixture includes a clearly synthetic, test-only Swiss publication designed to exercise deterministic cohort changes and outliers. Production reference data continues to come exclusively from the publication pipeline.
 
+## Campaign context
+
+Step 4 accepts three clearly labeled user-provided context types: JPEG/PNG/WebP images, narrowly recognized YouTube watch links, and ordinary HTTP(S) links. Each item can carry a label, attribution, description, source URL, and author-controlled order. Public and shared views present this material under “Kampagnenkontext · nutzerbereitgestellt”, after the separately labeled parliamentary evidence.
+
+Images are inspected server-side, bounded by `UPLOAD_MAX_BYTES`, stored under the HTTP-denied `site/storage/uploads/` root with generated names, and served only through an authorization-aware media endpoint. Direct storage paths, SVG, renamed scripts, invalid image bytes, oversized images, arbitrary HTML, and submitted embed markup are rejected.
+
+YouTube embeds accept only HTTPS `youtube.com/watch?v=…` and `youtu.be/…` forms with a valid 11-character video ID. Unsupported hosts can be added only as an ordinary Weblink and are never embedded. All user text is rendered through DOM text nodes; external links use `noopener noreferrer`, and generated YouTube frames use the privacy-enhanced host and a restrictive sandbox.
+
+Context lifecycle policy: closing the entry modal before submission stores nothing. A successful image submission attaches immediately to the draft; removing the item removes its protected file, and failed database persistence cleans up the moved file. Archiving is reversible and therefore retains context rows and files. The MVP has no hard-delete or timed-retention job.
+
+Owner context endpoints are:
+
+- `GET|POST /api/insights/{public-id}/contexts` for listing and link/YouTube creation;
+- `POST /api/insights/{public-id}/context-images` for multipart image upload;
+- `PATCH|DELETE /api/insights/{public-id}/contexts/{id}` for metadata editing and removal;
+- `PUT /api/insights/{public-id}/contexts/order` for complete-list ordering; and
+- `GET /media/campaign-context/{id}` for authorized image streaming, with the opaque unlisted token added only on shared views.
+
 Both mutations require `X-CSRF-Token`. Login rotates the session ID. Cookies are HTTP-only, SameSite=Lax, and secure when `APP_URL` is HTTPS. Google JWT verification requires RS256, a matching key ID/signature, the configured audience, a permitted issuer, a future expiration, and a verified unique email.
 
 Apache must allow `.htaccess` overrides for the deployment directory. The committed rules route requests through `index.php`, disable directory listing, and hide environment files, backend PHP, database scripts, logs, and private storage. Do not deploy without those rules taking effect.
@@ -244,7 +262,7 @@ Run the full application verification (unit tests, real test-database auth integ
 npm.cmd run verify
 ```
 
-Playwright's global setup seeds two deterministic test users, all three visibility states, and the synthetic vote-workspace fixture in the test database. It never reads or prints production credentials. The suite covers populated and empty catalogues, keyboard accordions, owner CRUD, unlisted-link indexing protection, the complete wizard, live cohort changes, vote inspection, validation, publication, and desktop/mobile light/dark baselines.
+Playwright's global setup seeds two deterministic test users, all three visibility states, and the synthetic vote-workspace fixture in the test database. It never reads or prints production credentials. The suite covers populated and empty catalogues, keyboard accordions, owner CRUD, unlisted-link indexing protection, the complete wizard, live cohort changes, vote inspection, campaign-context validation/presentation, publication, and desktop/mobile light/dark baselines.
 
 The production verifier needs OpenSSL and prefers cURL for Google's signing keys, with a verified HTTPS stream fallback. The local PHP CLI is currently 8.2.30 and lacks OpenSSL, cURL, and `mbstring`; production Google login therefore remains a target-host smoke check until PHP 8.4 with the required extensions is used locally.
 

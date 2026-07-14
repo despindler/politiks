@@ -662,6 +662,21 @@ CREATE TABLE IF NOT EXISTS insight_campaign_context (
         REFERENCES insight (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+SET @politiks_context_attribution_exists = (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'insight_campaign_context'
+      AND column_name = 'attribution'
+);
+SET @politiks_context_attribution_sql = IF(
+    @politiks_context_attribution_exists = 0,
+    'ALTER TABLE insight_campaign_context ADD COLUMN attribution VARCHAR(255) NULL AFTER label',
+    'SET @politiks_context_attribution_noop = 1'
+);
+PREPARE politiks_context_attribution_migration FROM @politiks_context_attribution_sql;
+EXECUTE politiks_context_attribution_migration;
+DEALLOCATE PREPARE politiks_context_attribution_migration;
+
 INSERT INTO reference_state (singleton_id, active_publication_id, updated_at)
 VALUES (1, NULL, UTC_TIMESTAMP(6))
 ON DUPLICATE KEY UPDATE singleton_id = VALUES(singleton_id);

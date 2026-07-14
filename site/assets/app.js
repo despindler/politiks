@@ -71,6 +71,40 @@
 
   function badge(text) { return element('span', 'badge rounded-pill scope-badge', text); }
 
+  function campaignContext(context) {
+    const item = element('article', 'public-context-card');
+    if (context.context_type === 'image') {
+      const image = element('img', 'public-context-image');
+      image.src = context.media_url;
+      image.alt = context.label || 'Nutzerbereitgestelltes Kampagnenmaterial';
+      image.loading = 'lazy';
+      item.append(image);
+    } else if (context.context_type === 'youtube') {
+      const ratio = element('div', 'ratio ratio-16x9');
+      const frame = element('iframe');
+      frame.src = context.youtube_embed_url;
+      frame.title = context.label || 'Nutzerbereitgestelltes YouTube-Video';
+      frame.loading = 'lazy';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+      frame.setAttribute('allow', 'encrypted-media; picture-in-picture');
+      frame.setAttribute('allowfullscreen', '');
+      ratio.append(frame); item.append(ratio);
+    }
+    const body = element('div', 'p-3');
+    body.append(element('div', 'small text-uppercase fw-semibold text-accent mb-1', context.context_type === 'image' ? 'Bild' : context.context_type === 'youtube' ? 'YouTube' : 'Weblink'));
+    body.append(element('h5', 'h6 mb-2', context.label || 'Kampagnenkontext'));
+    if (context.attribution) body.append(element('p', 'small text-body-secondary mb-2', `Quelle/Urheber: ${context.attribution}`));
+    if (context.description) body.append(element('p', 'small mb-2', context.description));
+    if (context.source_url) {
+      const link = element('a', 'small', context.context_type === 'youtube' ? 'Video auf YouTube öffnen' : 'Quelle öffnen');
+      link.href = context.source_url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      body.append(link);
+    }
+    item.append(body);
+    return item;
+  }
+
   function insightAccordion(insight, index) {
     const item = element('article', 'accordion-item');
     const heading = element('h3', 'accordion-header');
@@ -110,6 +144,13 @@
       });
     } else {
       body.append(element('p', 'small text-body-secondary mb-0', 'Dieser Insight enthält noch keine ausgewählte Abstimmung.'));
+    }
+    if (insight.campaign_contexts?.length) {
+      body.append(element('h4', 'h6 mt-4 mb-1', 'Kampagnenkontext · nutzerbereitgestellt'));
+      body.append(element('p', 'small text-body-secondary', 'Diese Materialien wurden von der Autorin oder dem Autor ergänzt und sind keine offiziellen Parlamentsdaten.'));
+      const contexts = element('div', 'public-context-grid');
+      insight.campaign_contexts.forEach((context) => contexts.append(campaignContext(context)));
+      body.append(contexts);
     }
     collapse.append(body);
     item.append(heading, collapse);

@@ -8,6 +8,7 @@
     evidence: [], votes: [], voteMap: new Map(), query: '', direction: 'all', cohesion: 'all',
     voteType: 'all', topic: 'all', classification: 'all', memberFilter: 'all',
     currentStep: 0, mobileView: 'yes', memberSearch: '', cohortSearch: '', loadingVotes: false,
+    contexts: [],
   };
   const steps = Array.from(root.querySelectorAll('.wizard-step'));
   const tabs = Array.from(root.querySelectorAll('[data-step-target]'));
@@ -18,7 +19,7 @@
   async function api(path, options = {}) {
     const headers = new Headers(options.headers || {});
     headers.set('Accept', 'application/json');
-    if (options.body !== undefined) headers.set('Content-Type', 'application/json');
+    if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
     if (options.method && options.method !== 'GET') headers.set('X-CSRF-Token', state.csrf);
     const response = await fetch(path, { credentials: 'same-origin', ...options, headers });
     const payload = await response.json().catch(() => ({ ok: false, message: 'Die Serverantwort konnte nicht gelesen werden.' }));
@@ -383,6 +384,178 @@
     });
   }
 
+  const contextTypeMeta = {
+    image: { label: 'Bild', icon: 'bi-image' },
+    youtube: { label: 'YouTube', icon: 'bi-youtube' },
+    link: { label: 'Weblink', icon: 'bi-link-45deg' },
+  };
+
+  async function loadContexts() {
+    const payload = await api(`/api/insights/${publicId}/contexts`);
+    state.contexts = payload.items;
+    renderContexts();
+  }
+
+  function contextPreview(context) {
+    if (context.context_type === 'image') {
+      const image = node('img', 'context-image');
+      image.src = context.media_url;
+      image.alt = context.label || 'Hochgeladenes Kampagnenmaterial';
+      image.loading = 'lazy';
+      return image;
+    }
+    if (context.context_type === 'youtube') {
+      const ratio = node('div', 'ratio ratio-16x9 context-video');
+      const frame = node('iframe');
+      frame.src = `https://www.youtube-nocookie.com/embed/${context.youtube_video_id}`;
+      frame.title = context.label || 'Nutzerbereitgestelltes YouTube-Video';
+      frame.loading = 'lazy';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+      frame.setAttribute('allow', 'encrypted-media; picture-in-picture');
+      frame.setAttribute('allowfullscreen', '');
+      ratio.append(frame);
+      return ratio;
+    }
+    const icon = node('div', 'context-link-preview');
+    const symbol = node('i', 'bi bi-box-arrow-up-right');
+    symbol.setAttribute('aria-hidden', 'true');
+    icon.append(symbol);
+    return icon;
+  }
+
+  function renderContexts() {
+    const list = document.querySelector('[data-context-list]');
+    const empty = document.querySelector('[data-context-empty]');
+    list.replaceChildren();
+    empty.classList.toggle('d-none', state.contexts.length > 0);
+    state.contexts.forEach((context, index) => {
+      const item = node('article', 'context-card');
+      const preview = node('div', 'context-preview');
+      preview.append(contextPreview(context));
+      const body = node('div', 'context-card-body');
+      const heading = node('div', 'd-flex flex-wrap align-items-center gap-2 mb-2');
+      heading.append(node('span', 'badge rounded-pill text-bg-light border', contextTypeMeta[context.context_type].label));
+      heading.append(node('strong', '', context.label || (context.context_type === 'image' ? context.original_filename : 'Ohne Bezeichnung')));
+      body.append(heading);
+      if (context.attribution) body.append(node('p', 'small text-body-secondary mb-2', `Quelle/Urheber: ${context.attribution}`));
+      if (context.description) body.append(node('p', 'mb-2', context.description));
+      if (context.source_url) {
+        const source = node('a', 'small d-inline-flex align-items-center gap-1 mb-3', 'Quelle öffnen');
+        source.href = context.source_url;
+        source.target = '_blank';
+        source.rel = 'noopener noreferrer';
+        source.append(node('i', 'bi bi-box-arrow-up-right'));
+        body.append(source);
+      }
+      const actions = node('div', 'context-actions');
+      const up = node('button', 'btn btn-sm btn-outline-secondary', 'Nach oben');
+      up.type = 'button'; up.disabled = index === 0; up.addEventListener('click', () => moveContext(index, -1));
+      const down = node('button', 'btn btn-sm btn-outline-secondary', 'Nach unten');
+      down.type = 'button'; down.disabled = index === state.contexts.length - 1; down.addEventListener('click', () => moveContext(index, 1));
+      const edit = node('button', 'btn btn-sm btn-outline-secondary', 'Bearbeiten');
+      edit.type = 'button'; edit.addEventListener('click', () => openContextModal(context.context_type, context));
+      const remove = node('button', 'btn btn-sm btn-outline-danger', 'Entfernen');
+      remove.type = 'button'; remove.addEventListener('click', () => deleteContext(context));
+      actions.append(up, down, edit, remove);
+      body.append(actions);
+      item.append(preview, body);
+      list.append(item);
+    });
+  }
+
+  function openContextModal(type, context = null) {
+    const form = document.querySelector('[data-context-form]');
+    form.reset();
+    form.elements.context_type.value = type;
+    form.elements.context_id.value = context?.id || '';
+    form.elements.label.value = context?.label || '';
+    form.elements.attribution.value = context?.attribution || '';
+    form.elements.description.value = context?.description || '';
+    form.elements.source_url.value = context?.source_url || '';
+    const isImage = type === 'image';
+    document.querySelector('[data-context-file-row]').classList.toggle('d-none', !isImage || Boolean(context));
+    document.querySelector('[data-context-url-row]').classList.toggle('d-none', false);
+    document.querySelector('[data-context-url-label]').textContent = isImage ? 'Quellenlink (optional)' : type === 'youtube' ? 'YouTube-Adresse' : 'Webadresse';
+    form.elements.source_url.required = !isImage;
+    form.elements.image.required = isImage && !context;
+    document.querySelector('[data-context-modal-title]').textContent = `${context ? 'Material bearbeiten' : contextTypeMeta[type].label + ' hinzufügen'}`;
+    document.querySelector('[data-context-modal-error]').classList.add('d-none');
+    bootstrap.Modal.getOrCreateInstance('#context-modal').show();
+  }
+
+  function contextMetadata(form) {
+    return {
+      label: form.elements.label.value,
+      attribution: form.elements.attribution.value,
+      description: form.elements.description.value,
+      source_url: form.elements.source_url.value,
+    };
+  }
+
+  async function saveContext(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submit = form.querySelector('[type="submit"]');
+    const errorBox = document.querySelector('[data-context-modal-error]');
+    submit.disabled = true;
+    errorBox.classList.add('d-none');
+    try {
+      const id = form.elements.context_id.value;
+      const type = form.elements.context_type.value;
+      const metadata = contextMetadata(form);
+      if (id) {
+        await api(`/api/insights/${publicId}/contexts/${id}`, { method: 'PATCH', body: JSON.stringify(metadata) });
+      } else if (type === 'image') {
+        const data = new FormData();
+        data.append('image', form.elements.image.files[0]);
+        Object.entries(metadata).forEach(([key, value]) => { if (value) data.append(key, value); });
+        await api(`/api/insights/${publicId}/context-images`, { method: 'POST', body: data });
+      } else {
+        await api(`/api/insights/${publicId}/contexts`, { method: 'POST', body: JSON.stringify({ context_type: type, ...metadata }) });
+      }
+      await loadContexts();
+      bootstrap.Modal.getInstance('#context-modal').hide();
+      setSaveStatus('Kampagnenmaterial gespeichert');
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.classList.remove('d-none');
+      errorBox.focus();
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
+  async function moveContext(index, offset) {
+    const next = index + offset;
+    if (next < 0 || next >= state.contexts.length) return;
+    const reordered = [...state.contexts];
+    [reordered[index], reordered[next]] = [reordered[next], reordered[index]];
+    try {
+      const payload = await api(`/api/insights/${publicId}/contexts/order`, {
+        method: 'PUT', body: JSON.stringify({ context_ids: reordered.map((context) => context.id) }),
+      });
+      state.contexts = payload.items;
+      renderContexts();
+    } catch (error) { showContextError(error); }
+  }
+
+  async function deleteContext(context) {
+    if (!window.confirm(`„${context.label || 'Dieses Material'}“ wirklich entfernen?`)) return;
+    try {
+      await api(`/api/insights/${publicId}/contexts/${context.id}`, { method: 'DELETE', body: '{}' });
+      await loadContexts();
+      setSaveStatus('Kampagnenmaterial entfernt');
+    } catch (error) { showContextError(error); }
+  }
+
+  function showContextError(error) {
+    const box = document.querySelector('[data-context-error]');
+    box.textContent = error.message || 'Das Kampagnenmaterial konnte nicht geändert werden.';
+    box.classList.remove('d-none');
+    box.focus();
+  }
+
   function updateReview() {
     const scope = scopePayload();
     const party = state.options.parties.find((item) => item.id === scope.party_id)?.name || 'Nicht gewählt';
@@ -391,6 +564,7 @@
       ['Rahmen', `${party} · ${chamber} · ${scope.period_from || '–'} bis ${scope.period_to || '–'}`],
       ['Mitglieder', `${state.selected.size} ausgewählt`],
       ['Evidenz', `${state.evidence.length} Abstimmungen ausgewählt`],
+      ['Kampagnenkontext', `${state.contexts.length} Elemente · nutzerbereitgestellt`],
       ['Aussage', document.querySelector('#wizard-claim').value || 'Noch nicht formuliert'],
     ];
     const summary = document.querySelector('[data-review-summary]'); summary.replaceChildren();
@@ -492,6 +666,7 @@
     document.querySelector('#wizard-notes').value = payload.insight.explanatory_notes || '';
     document.querySelector('#wizard-visibility').value = payload.insight.visibility;
     document.querySelector('[data-wizard-title]').textContent = payload.insight.title || 'Insight erstellen';
+    await loadContexts();
     if (scopeComplete()) { await saveScope(); await loadMembers(); if (state.selected.size) await loadVotes(); }
     await showStep(0, false);
   }
@@ -517,6 +692,8 @@
   document.querySelectorAll('[data-mobile-view]').forEach((button) => button.addEventListener('click', () => { state.mobileView = button.dataset.mobileView; document.querySelectorAll('[data-mobile-view]').forEach((item) => item.classList.toggle('active', item === button)); renderVotes(); }));
   document.querySelector('[data-outlier-toggle]').addEventListener('click', () => document.querySelector('[data-outlier-panel]').classList.toggle('d-none'));
   document.querySelector('[data-evidence-review]').addEventListener('click', () => bootstrap.Modal.getOrCreateInstance('#evidence-modal').show());
+  document.querySelectorAll('[data-context-add]').forEach((button) => button.addEventListener('click', () => openContextModal(button.dataset.contextAdd)));
+  document.querySelector('[data-context-form]').addEventListener('submit', saveContext);
   document.querySelector('[data-theme-cycle]').addEventListener('click', () => { const order = ['system', 'light', 'dark']; const current = document.documentElement.dataset.themePreference || 'system'; applyTheme(order[(order.indexOf(current) + 1) % order.length]); });
   document.querySelectorAll('#scope-country, #scope-legislature').forEach((select) => select.addEventListener('change', initializeScope));
 

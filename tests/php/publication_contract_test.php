@@ -65,7 +65,7 @@ return [
         assertTrue($sql !== false, 'MariaDB schema must be readable.');
         $statements = SqlScript::statements($sql);
         assertTrue(is_array($statements), 'SQL script parser must return statements.');
-        assertSameValue(35, count($statements), 'The complete schema statement count should remain explicit.');
+        assertSameValue(40, count($statements), 'The complete schema statement count should remain explicit.');
         foreach ($statements as $statement) {
             assertTrue(trim($statement) !== '', 'Schema must not contain empty executable statements.');
         }

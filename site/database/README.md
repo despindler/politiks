@@ -13,6 +13,8 @@ Only accepted/edited rows from SQLite's `reviewed_classification` view enter `re
 
 The insight wizard reads its scope, people, memberships, mandates, vote choices, search documents, topics, and reviewed labels from the insight's stored publication. A member is selectable only when both the formal-party membership and chamber mandate overlap the chosen period. Vote direction is an application-time cohort calculation over `yes` and `no`; abstentions and missing participation remain explicit and do not decide direction. `insight_member` and `insight_vote_evidence` store ordered source identifiers plus the same publication ID, so later reference activations cannot silently change saved evidence.
 
+`insight_campaign_context` is application-owned and deliberately separate from `insight_vote_evidence`. It stores ordered image/YouTube/link metadata, attribution, normalized YouTube IDs, generated storage keys, MIME/size/hash metadata, and escaped user-authored descriptions. The idempotent attribution-column upgrade uses an information-schema check so both the target MariaDB 10.6 host and the local MySQL-compatible test server can apply the schema repeatedly.
+
 Apply and verify from the repository root:
 
 ```powershell

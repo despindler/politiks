@@ -84,7 +84,7 @@ final class InsightStore
         );
         $statement->execute([hash('sha256', $token)]);
         $rows = $statement->fetchAll();
-        return $rows === [] ? null : $this->hydrate($rows, false)[0];
+        return $rows === [] ? null : $this->hydrate($rows, false, $token)[0];
     }
 
     /** @return array<string,mixed> */
@@ -281,7 +281,7 @@ final class InsightStore
     }
 
     /** @param list<array<string,mixed>> $rows @return list<array<string,mixed>> */
-    private function hydrate(array $rows, bool $ownerView): array
+    private function hydrate(array $rows, bool $ownerView, ?string $shareToken = null): array
     {
         if ($rows === []) {
             return [];
@@ -317,7 +317,43 @@ final class InsightStore
             ];
         }
 
-        return array_map(function (array $row) use ($ownerView, $byInsight): array {
+        $contexts = $this->connection()->prepare(
+            "SELECT id, insight_id, context_type, position, label, attribution, description,
+                    source_url, youtube_video_id, original_filename, media_type, byte_count
+             FROM insight_campaign_context
+             WHERE insight_id IN ($placeholders)
+             ORDER BY insight_id, position, id"
+        );
+        $contexts->execute($ids);
+        $contextsByInsight = [];
+        foreach ($contexts->fetchAll() as $context) {
+            $mediaUrl = null;
+            if ($context['context_type'] === 'image') {
+                $mediaUrl = '/media/campaign-context/' . $context['id'];
+                if ($shareToken !== null) {
+                    $mediaUrl .= '?share=' . rawurlencode($shareToken);
+                }
+            }
+            $contextsByInsight[(int) $context['insight_id']][] = [
+                'id' => (int) $context['id'],
+                'context_type' => $context['context_type'],
+                'position' => (int) $context['position'],
+                'label' => $context['label'],
+                'attribution' => $context['attribution'],
+                'description' => $context['description'],
+                'source_url' => $context['source_url'],
+                'youtube_video_id' => $context['youtube_video_id'],
+                'youtube_embed_url' => $context['youtube_video_id'] === null
+                    ? null
+                    : 'https://www.youtube-nocookie.com/embed/' . $context['youtube_video_id'],
+                'media_url' => $mediaUrl,
+                'original_filename' => $context['original_filename'],
+                'media_type' => $context['media_type'],
+                'byte_count' => $context['byte_count'] === null ? null : (int) $context['byte_count'],
+            ];
+        }
+
+        return array_map(function (array $row) use ($ownerView, $byInsight, $contextsByInsight): array {
             $item = [
                 'public_id' => $row['public_id'],
                 'title' => $row['title'],
@@ -335,6 +371,7 @@ final class InsightStore
                 'member_count' => (int) $row['member_count'],
                 'evidence_count' => (int) $row['evidence_count'],
                 'campaign_context_count' => (int) $row['context_count'],
+                'campaign_contexts' => $contextsByInsight[(int) $row['id']] ?? [],
                 'votes' => $byInsight[(int) $row['id']] ?? [],
                 'published_at' => $row['published_at'],
                 'updated_at' => $row['updated_at'],

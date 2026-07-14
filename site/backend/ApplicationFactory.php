@@ -14,6 +14,7 @@ use Politiks\App\Security\Csrf;
 use Politiks\App\Security\NativeSession;
 use Politiks\App\Insight\InsightStore;
 use Politiks\App\Insight\WizardStore;
+use Politiks\App\Insight\CampaignContextStore;
 
 final class ApplicationFactory
 {
@@ -33,12 +34,18 @@ final class ApplicationFactory
                 ),
                 new OpenSslJwtSignatureVerifier(),
             );
+        $campaignContexts = new CampaignContextStore(
+            $database->connection(...),
+            $config->storagePath,
+            $config->uploadMaxBytes,
+        );
         return new Application(
             $config,
             new AuthService($verifier, $users, $session),
             new Csrf($session),
             new InsightStore($database->connection(...), $config->appUrl),
             new WizardStore($database->connection(...)),
+            $campaignContexts,
         );
     }
 }

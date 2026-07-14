@@ -15,7 +15,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 6. PHP shell, security baseline, and Google authentication | Complete | 2026-07-14 |
 | 7. Public catalogue and personal insight management | Complete | 2026-07-14 |
 | 8. Insight wizard and parliamentary evidence search | Complete | 2026-07-14 |
-| 9. Campaign-context attachments | Not started | — |
+| 9. Campaign-context attachments | Complete | 2026-07-14 |
 | 10. End-to-end hardening and MVP release | Not started | — |
 
 ## Working decisions
@@ -322,4 +322,37 @@ Replace the compact editor with the complete guided evidence workflow and make t
 - Filter facets are derived from the bounded result set rather than a separate global aggregation query. The server returns at most 100 matching votes and clearly labels a limited result.
 - The outlier summary deliberately describes the current search result, so narrowing the query changes its evaluated-vote denominator.
 - The compact official acquisition fixture cannot truthfully test chamber-scoped cohorts because those sampled events have unknown chamber provenance. The synthetic fixture is isolated to tests; production behavior still depends on a verified full Swiss reference publication.
-- Campaign posters, images, YouTube videos, and ordinary links are intentionally deferred to Milestone 9. The assistant clearly labels that boundary in Step 4.
+- Campaign posters, images, YouTube videos, and ordinary links are implemented in Milestone 9 and remain visually separate from official evidence.
+
+## Milestone 9 — Campaign-context attachments and safe presentation
+
+### Goal
+
+Let authors add campaign material as clearly labeled interpretive context without weakening the provenance or presentation boundary around official parliamentary evidence.
+
+### Work completed
+
+- Added owner-only, CSRF-protected APIs for listing, creating, editing, reordering, and deleting image, YouTube, and external-link context items.
+- Added labels, attribution, descriptions, source URLs, deterministic positions, and public/shared hydration alongside—but structurally separate from—official vote evidence.
+- Added protected image storage with generated random names, 0600 file permissions, SHA-256 metadata, a non-public storage root, and an authorization-aware streaming route for owners, public insights, or a valid unlisted token.
+- Added bounded upload handling and server-side image inspection. Only JPEG, PNG, and WebP with matching decoded image metadata, reasonable dimensions, and configured byte limits are accepted; SVG, renamed scripts, invalid bytes, and oversized files are rejected.
+- Added narrow HTTPS YouTube parsing for `youtube.com/watch?v=…` and `youtu.be/…`, normalization to a stable 11-character video ID, and generated privacy-enhanced embeds under the CSP. Submitted HTML or embed markup is never accepted.
+- Added escaped DOM-only rendering for all user text and links, safe external-link attributes, sandboxed YouTube frames, and explicit “nutzerbereitgestellt” notices in the wizard and public/shared catalogue.
+- Added responsive context cards, modal entry/editing, full-width type actions, ordering controls, and reviewed light/dark desktop/mobile visual references.
+- Documented lifecycle behavior: cancelling before submission stores nothing; a successfully uploaded item is attached immediately to the draft; removing it deletes its file; failed persistence cleans up the moved file; archiving retains attached files because archive is reversible; hard deletion/retention expiry is intentionally not exposed in the MVP.
+
+### Verification
+
+- Pure PHP suite: 22 checks passed, including strict supported/unsupported YouTube URL cases.
+- Campaign-context MariaDB integration passed image validation, generated storage names, literal XSS-payload persistence, ownership isolation, ordering, unlisted-token media authorization, and physical file deletion.
+- Existing authentication, insight-lifecycle, and wizard MariaDB integrations remained green.
+- Playwright covers SVG rejection, invalid YouTube rejection, valid image/YouTube/link creation, normalized safe rendering, stored-XSS resistance, image streaming, reordering, review counts, unlisted sharing, and public context presentation.
+- Four reviewed visual references cover the complete context editor on desktop/mobile in light/dark modes with no clipping, horizontal overflow, illegible contrast, or overlapping actions.
+- Full `npm.cmd run verify`: 22 pure PHP checks, all four MariaDB integration suites, and 38 Playwright cases passed.
+
+### Known limitations and next implications
+
+- The MVP accepts JPEG, PNG, and WebP only. Animated formats, SVG, arbitrary embeds, direct HTML, and non-YouTube video hosts are deliberately unsupported.
+- YouTube input is deliberately narrow. Unsupported hosts may be stored only when the author explicitly chooses the ordinary Weblink type; they never become embeds.
+- Image responses use private no-store caching for a simple authorization model. Production-scale caching or signed short-lived media URLs remain future work.
+- Archived insights retain upload files. A future hard-delete/retention job must delete database rows and their protected files together and should be exercised in deployment backups before activation.
