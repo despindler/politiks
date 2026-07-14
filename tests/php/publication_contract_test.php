@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Politiks\Tooling\Environment;
+use Politiks\Tooling\ReferencePublisher;
 use Politiks\Tooling\SqlScript;
 
 require_once __DIR__ . '/../../scripts/lib/Environment.php';
+require_once __DIR__ . '/../../scripts/lib/ReferencePublisher.php';
 require_once __DIR__ . '/../../scripts/lib/SqlScript.php';
 
 return [
@@ -37,6 +39,30 @@ return [
         } finally {
             @unlink($path);
         }
+    },
+    'reference publication normalizes explicit unknown person dates' => static function (): void {
+        $reflection = new ReflectionClass(ReferencePublisher::class);
+        $publisher = $reflection->newInstanceWithoutConstructor();
+        $normalizer = $reflection->getMethod('mariaDate');
+
+        assertSameValue(
+            null,
+            $normalizer->invoke($publisher, 'Unknown'),
+            'Explicit unknown dates must publish as SQL NULL.'
+        );
+        assertSameValue(
+            '1984-01-31',
+            $normalizer->invoke($publisher, '1984-01-31'),
+            'Valid ISO dates must remain unchanged.'
+        );
+
+        $rejected = false;
+        try {
+            $normalizer->invoke($publisher, '31.01.1984');
+        } catch (RuntimeException) {
+            $rejected = true;
+        }
+        assertTrue($rejected, 'Non-ISO source dates must fail instead of being coerced by MariaDB.');
     },
     'MariaDB schema contains immutable publication and application ownership boundaries' => static function (): void {
         $schema = file_get_contents(__DIR__ . '/../../site/database/schema.sql');

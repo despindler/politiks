@@ -203,7 +203,7 @@ final class ReferencePublisher
     }
 
     /**
-     * @param array{destination:string, columns:list<string>, sql:string, datetime_columns?:list<string>} $mapping
+     * @param array{destination:string, columns:list<string>, sql:string, date_columns?:list<string>, datetime_columns?:list<string>} $mapping
      * @param resource $hash
      */
     private function publishTable(int $publicationId, array $mapping, $hash): int
@@ -221,7 +221,9 @@ final class ReferencePublisher
                     );
                 }
                 $value = $row[$column];
-                if ($value !== null && in_array($column, $mapping['datetime_columns'] ?? [], true)) {
+                if ($value !== null && in_array($column, $mapping['date_columns'] ?? [], true)) {
+                    $value = $this->mariaDate((string) $value);
+                } elseif ($value !== null && in_array($column, $mapping['datetime_columns'] ?? [], true)) {
                     $value = $this->mariaDateTime((string) $value);
                 }
                 $normalized[$column] = $value;
@@ -278,6 +280,21 @@ final class ReferencePublisher
         return $date->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
     }
 
+    private function mariaDate(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '' || strcasecmp($value, 'unknown') === 0) {
+            return null;
+        }
+
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value, new DateTimeZone('UTC'));
+        if ($date === false || $date->format('Y-m-d') !== $value) {
+            throw new RuntimeException(sprintf('Invalid source date value: %s.', $value));
+        }
+
+        return $value;
+    }
+
     /** @param mixed $value */
     private function canonicalJson($value): string
     {
@@ -287,7 +304,7 @@ final class ReferencePublisher
         );
     }
 
-    /** @return list<array{destination:string, columns:list<string>, sql:string, datetime_columns?:list<string>}> */
+    /** @return list<array{destination:string, columns:list<string>, sql:string, date_columns?:list<string>, datetime_columns?:list<string>}> */
     private function tableMappings(): array
     {
         return [
@@ -300,7 +317,7 @@ final class ReferencePublisher
             ['destination' => 'ref_committee', 'columns' => ['source_id', 'legislature_source_id', 'chamber_source_id', 'source_system', 'source_identifier', 'code', 'abbreviation', 'name', 'committee_type', 'valid_from', 'valid_to'], 'sql' => 'SELECT id source_id, legislature_id legislature_source_id, chamber_id chamber_source_id, source_system, source_identifier, code, abbreviation, name, committee_type, valid_from, valid_to FROM committee ORDER BY id'],
             ['destination' => 'ref_party', 'columns' => ['source_id', 'country_source_id', 'source_system', 'source_identifier', 'code', 'abbreviation', 'name', 'valid_from', 'valid_to'], 'sql' => 'SELECT id source_id, country_id country_source_id, source_system, source_identifier, code, abbreviation, name, valid_from, valid_to FROM political_party ORDER BY id'],
             ['destination' => 'ref_faction', 'columns' => ['source_id', 'legislature_source_id', 'source_system', 'source_identifier', 'code', 'abbreviation', 'name', 'valid_from', 'valid_to'], 'sql' => 'SELECT id source_id, legislature_id legislature_source_id, source_system, source_identifier, code, abbreviation, name, valid_from, valid_to FROM parliamentary_faction ORDER BY id'],
-            ['destination' => 'ref_person', 'columns' => ['source_id', 'display_name', 'first_name', 'last_name', 'gender', 'birth_date', 'death_date'], 'sql' => 'SELECT id source_id, display_name, first_name, last_name, gender, birth_date, death_date FROM person ORDER BY id'],
+            ['destination' => 'ref_person', 'columns' => ['source_id', 'display_name', 'first_name', 'last_name', 'gender', 'birth_date', 'death_date'], 'date_columns' => ['birth_date', 'death_date'], 'sql' => 'SELECT id source_id, display_name, first_name, last_name, gender, birth_date, death_date FROM person ORDER BY id'],
             ['destination' => 'ref_person_identifier', 'columns' => ['source_id', 'person_source_id', 'source_system', 'namespace', 'identifier', 'resolution_method'], 'sql' => 'SELECT id source_id, person_id person_source_id, source_system, namespace, identifier, resolution_method FROM person_identifier ORDER BY id'],
             ['destination' => 'ref_person_mandate', 'columns' => ['source_id', 'person_source_id', 'chamber_source_id', 'subdivision_source_id', 'date_from', 'date_to', 'is_inferred', 'evidence_basis'], 'sql' => "SELECT id source_id, person_id person_source_id, chamber_id chamber_source_id, subdivision_id subdivision_source_id, date_from, date_to, 0 is_inferred, 'source_normalized_mandate' evidence_basis FROM person_mandate ORDER BY id"],
             ['destination' => 'ref_person_party_membership', 'columns' => ['source_id', 'person_source_id', 'party_source_id', 'date_from', 'date_to', 'is_inferred', 'evidence_basis'], 'sql' => 'SELECT id source_id, person_id person_source_id, party_id party_source_id, date_from, date_to, is_inferred, evidence_basis FROM person_party_membership ORDER BY id'],
