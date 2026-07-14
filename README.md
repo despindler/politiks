@@ -153,15 +153,29 @@ After recreating the research database, create auditable pending suggestions and
 
 The taxonomy, transparent rules, controlled human-review format, optional provider-neutral model interface, queue-export command, and benchmark limitations are documented in `classification/README.md` and `classification/BENCHMARK_REPORT.md`. Automated suggestions are never exposed through the reviewed publication view until a human accepts or edits them.
 
-## Remaining data workflow
+## MariaDB application schema and publication
 
-The remaining workflow is delivered incrementally according to `.agents/PLAN.md`:
+Use a dedicated database named in `.env.test`. Schema creation is idempotent; `--reset` drops every Politiks table and is therefore accepted only when the environment filename is exactly `.env.test`:
 
-1. A controlled publication script will transfer the application read model into MariaDB.
-2. The PHP shell and Google authentication will establish the deployable runtime boundary.
-3. `site/` will contain every runtime file required for Apache deployment.
+```powershell
+php scripts/bootstrap_mariadb.php --env=.env.test --reset
+```
 
-Import and publication commands will be added in the milestones that implement them. They are intentionally not represented by non-functional placeholders.
+Publish the currently generated SQLite read model as one immutable, atomically activated reference snapshot:
+
+```powershell
+php scripts/publish_reference_data.php `
+  --env=.env.test `
+  --sqlite=database/parliament.sqlite
+php scripts/verify_reference_publication.php `
+  --env=.env.test
+```
+
+Publication records the source snapshot/schema, source-file digest, taxonomy version/digest, reviewed-classification digest, per-table counts, and a deterministic content checksum. Repeating unchanged input reuses the existing publication. A new snapshot is populated inside one transaction and becomes visible only when every table reconciles. Pending or rejected classifications are never copied; only the reviewed projection is publishable.
+
+The generated SQLite database can come from either the fixture or full import. Production publication should use a freshly verified full import. Bootstrap and publication are CLI tools outside `site/`; there is no HTTP installer. The deployable schema contract is documented in `site/database/README.md`.
+
+The PHP shell and Google authentication are delivered by the next milestone. Runtime files continue to live entirely under `site/`.
 
 ## Security
 

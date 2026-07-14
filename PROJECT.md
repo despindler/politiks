@@ -11,7 +11,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 2. Country-neutral SQLite research model and import | Complete | 2026-07-14 |
 | 3. Full Swiss snapshot and data-quality report | Complete | 2026-07-14 |
 | 4. Auditable topic and beneficiary classification | Complete | 2026-07-14 |
-| 5. MariaDB schema and deterministic publication | Not started | — |
+| 5. MariaDB schema and deterministic publication | Complete | 2026-07-14 |
 | 6. PHP shell, security baseline, and Google authentication | Not started | — |
 | 7. Public catalogue and personal insight management | Not started | — |
 | 8. Insight wizard and parliamentary evidence search | Not started | — |
@@ -186,3 +186,37 @@ Add a reproducible discovery layer while keeping official facts, pending determi
 - German rules miss multilingual terms, synonyms, negation, legal context, and indirect/distributional effects. Topic labels do not establish whether Yes supports the overall affair.
 - Full per-affair text/topic enrichment remains absent, so the first pass mainly uses event titles, questions, and semantics. Every suggestion records the field/passages actually used.
 - No real suggestion is marked reviewed in the committed review file. This is intentional: publication begins only after an identified reviewer evaluates source evidence.
+
+## Milestone 5 — MariaDB schema and deterministic publication
+
+### Goal
+
+Create the deployed application schema and a deterministic, rollback-safe boundary that publishes the SQLite read model without creating a second factual-authoring path.
+
+### Work completed
+
+- Added a MariaDB 10.6-compatible InnoDB/`utf8mb4` schema with immutable publication metadata, a single active-snapshot pointer, and 27 country-neutral `ref_*` read-model tables.
+- Added application-owned users, insights, selected members, selected vote evidence, campaign-context items, draft/unlisted/public visibility, opaque public IDs, hashed share tokens, timestamps, and ownership/reference foreign keys.
+- Bound every insight and its parliamentary evidence to one immutable reference publication through composite keys, preserving its factual snapshot after future activations.
+- Added exact identifier/date indexes and a FULLTEXT vote-search projection while retaining official questions, Yes/No meanings, provenance URLs/checksums, and reviewed labels separately.
+- Added guarded CLI-only environment loading, PDO connection, schema bootstrap, deterministic publication, and read-only publication verification outside the public site root.
+- Made publication keys depend on the read-model version, source snapshot/schema, source-file digest, taxonomy version/digest, and reviewed-classification digest. Unchanged input reuses the same publication.
+- Published all tables in a single transaction, reconciled source/destination row counts per table, computed a deterministic content checksum, and changed the active pointer only after completion.
+- Exported only the SQLite `reviewed_classification` view. Pending/rejected suggestions cannot enter the MariaDB application surface.
+- Guarded database creation, destructive reset, artificial publication keys, and failure injection to a file named `.env.test`.
+
+### Verification
+
+- Clean `.env.test` bootstrap applied 35 schema statements and created 34 tables.
+- Fixture publication created publication 1 with 27 reconciled tables, including 54 voting events, 2,241 individual choices, 54 vote-search documents, and zero reviewed classifications.
+- Publishing identical input a second time returned `reused: true`, the same publication ID, and identical counts.
+- Injecting a failure after `ref_person` exited non-zero. The enclosing transaction left exactly one publication row, zero loading rows, and active publication 1 unchanged.
+- `scripts/verify_reference_publication.php` reconciled all 27 recorded table counts and exercised exact vote-identifier lookup plus 83 date-valid party/member/vote fixture links.
+- `php tests/php/run.php` covered the environment parser, schema contract, statement parser, and non-public CLI boundary in addition to foundation checks.
+
+### Known limitations and next implications
+
+- The local database returned a generic MySQL-compatible server version rather than identifying itself as MariaDB. The schema deliberately uses MariaDB 10.6-compatible constructs, but final confirmation against the user's MariaDB 10.6.18 host remains a deployment acceptance check.
+- Local acceptance used the compact fixture for speed. The same mapping accepts the full classified SQLite snapshot; production publication must be run from a freshly rebuilt and verified full database.
+- No real classification has been human-reviewed, so the correctly published reviewed-classification count is zero.
+- Runtime queries must join current catalogue/search data through `reference_state`, while saved insights must continue using their stored `reference_publication_id`.
