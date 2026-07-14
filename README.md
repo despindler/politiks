@@ -104,14 +104,27 @@ Run acquisition unit tests without relying on the Parliament service:
 
 Observed endpoint schemas, identifiers, and coverage limitations are documented under `source/documentation/`.
 
+## Research database import
+
+Recreate `database/parliament.sqlite` from the committed fixture without network access by executing the import notebook:
+
+```powershell
+.\.venv\Scripts\python.exe -m jupyter nbconvert --to notebook --execute `
+  --inplace notebooks/01_import_source_data.ipynb `
+  --ExecutePreprocessor.timeout=120
+```
+
+The notebook resolves the repository root, recreates the database through `database/schema.sql`, verifies source checksums, imports in one transaction, and fails on integrity or stable-identifier duplication errors. Run it a second time to verify recreation produces identical logical counts. The generated SQLite file remains ignored.
+
+The fixture import's supported shapes, mapping rules, counts, and limitations are in `database/IMPORT_REPORT.md`.
+
 ## Remaining data workflow
 
 The remaining workflow is delivered incrementally according to `.agents/PLAN.md`:
 
-1. `database/schema.sql` and `notebooks/01_import_source_data.ipynb` will recreate the SQLite research database.
-2. A later full-snapshot plan will expand the fixture after the Council of States source path is confirmed.
-3. A controlled publication script will transfer the application read model into MariaDB.
-4. `site/` will contain every runtime file required for Apache deployment.
+1. A full-snapshot plan will expand the fixture after the Council of States source path is confirmed.
+2. A controlled publication script will transfer the application read model into MariaDB.
+3. `site/` will contain every runtime file required for Apache deployment.
 
 Import and publication commands will be added in the milestones that implement them. They are intentionally not represented by non-functional placeholders.
 

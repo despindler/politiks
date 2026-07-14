@@ -8,7 +8,7 @@ This file records durable milestone status, verification, decisions, and known l
 |---|---|---|
 | 0. Repository foundation and executable contracts | Complete | 2026-07-14 |
 | 1. Swiss source reconnaissance and acquisition proof | Complete | 2026-07-14 |
-| 2. Country-neutral SQLite research model and import | Not started | — |
+| 2. Country-neutral SQLite research model and import | Complete | 2026-07-14 |
 | 3. Full Swiss snapshot and data-quality report | Not started | — |
 | 4. Auditable topic and beneficiary classification | Not started | — |
 | 5. MariaDB schema and deterministic publication | Not started | — |
@@ -88,3 +88,34 @@ Confirm the official service's live behavior and create a small, auditable, resu
 - The sampled vote-affair events contain 199–200 choices and no chamber field, proving National Council-scale records only.
 - Official rules confirm public Council of States individual votes from spring 2022 and narrower access from spring 2014, but the chamber-explicit machine-readable official route remains to be established before the full-snapshot milestone.
 - The Milestone 2 schema must preserve endpoint-specific ID namespaces, raw vote tokens, unknown chamber where necessary, source provenance, and dated party/faction memberships.
+
+## Milestone 2 — Country-neutral SQLite research model and import
+
+### Goal
+
+Create the reproducible research schema and import every supported local Swiss fixture response without classification or network access.
+
+### Work completed
+
+- Added a country-neutral normalized SQLite schema covering provenance, countries, legislatures, chambers, periods, sessions, subdivisions, committees, parties, factions, people, identifier namespaces, dated memberships, affairs, official text/topics/descriptors, voting events, aggregates, and individual choices.
+- Added a transactional Swiss snapshot importer that verifies every manifest byte count and SHA256 before parsing, retains every JSON source object, and recreates the generated database from scratch.
+- Kept CV person IDs, voting councillor numbers, ELAN IDs, events, registrations, and individual choices in explicit namespaces.
+- Preserved raw individual decision tokens and marked the aggregate-code normalization as inferred.
+- Imported current-profile party/faction intervals only with an explicit inference flag and evidence basis; explicit historic intervals remain distinguishable.
+- Added an executable, documented notebook with bounded outputs for logical counts, choice counts, chamber/year coverage, unresolved links, a representative dated membership join, and final integrity assertions.
+- Added importer regression tests and a fixture import report describing supported shapes and limitations.
+
+### Verification
+
+- `python -m pytest -q`: 14 passed, including two full clean imports with identical logical counts.
+- `python -m compileall -q src scripts tests/python`: passed.
+- The notebook executed top to bottom with `nbconvert` and recreated `database/parliament.sqlite` without a network request.
+- Fixture results: 38 source files, 960 JSON source records, 31 normalized JSON files, 54 voting events, and 2,241 individual choices.
+- `PRAGMA foreign_key_check`: zero violations; stable person and voting identifiers: zero duplicates; voting events without linked affairs: zero.
+
+### Known limitations and next implications
+
+- The vote source omits chamber, leaving all 54 fixture events unresolved rather than assigning them from record size.
+- The bounded fixture leaves 2,169 choices without date-valid party membership and 2,158 without date-valid faction membership; full acquisition must quantify and reduce these gaps.
+- Party/faction intervals derived from the three detailed current profiles are useful for representative joins but remain explicitly inferred, not source-confirmed history.
+- The Council of States machine-readable acquisition route remains the principal question for Milestone 3.
