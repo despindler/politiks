@@ -128,7 +128,7 @@ Recreate `database/parliament.sqlite` from the committed fixture without network
   --ExecutePreprocessor.timeout=120
 ```
 
-The notebook resolves the repository root, recreates the database through `database/schema.sql`, verifies source checksums, imports in one transaction, and fails on integrity or stable-identifier duplication errors. Run it a second time to verify recreation produces identical logical counts. The generated SQLite file remains ignored.
+The notebook resolves the repository root, recreates the database through `database/schema.sql`, verifies source checksums, imports in one transaction, and fails on integrity or stable-identifier duplication errors. Run it a second time to verify recreation produces identical logical counts. The generated full SQLite file is stored through Git LFS as a deployment handoff convenience; the schema, source bytes, and notebook remain the reproducible authority.
 
 The fixture import's supported shapes, mapping rules, counts, and limitations are in `database/IMPORT_REPORT.md`.
 

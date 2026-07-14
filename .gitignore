@@ -6,6 +6,7 @@ site/.env
 # Generated databases and runtime data
 *.sqlite
 *.sqlite3
+!database/parliament.sqlite
 source/**/*.part
 site/storage/uploads/*
 !site/storage/uploads/.gitkeep

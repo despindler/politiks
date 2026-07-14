@@ -333,7 +333,7 @@ The intended top-level shape is:
 ├── source/
 ├── database/
 │   ├── schema.sql
-│   └── parliament.sqlite          # generated; normally ignored
+│   └── parliament.sqlite          # generated full snapshot; stored through Git LFS for deployment handoff
 ├── notebooks/
 │   └── 01_import_source_data.ipynb
 ├── scripts/

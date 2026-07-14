@@ -2,7 +2,7 @@
 
 ## Scope
 
-Milestone 2 imports the verified `fixture` manifest into a generated SQLite database. The import is offline: it reads only `database/schema.sql`, `source/manifests/fixture.jsonl`, and the local files named by that manifest. The generated `database/parliament.sqlite` file is ignored because the schema, source bytes, and notebook are the reproducible authority.
+Milestone 2 imports the verified `fixture` manifest into a generated SQLite database. The import is offline: it reads only `database/schema.sql`, `source/manifests/fixture.jsonl`, and the local files named by that manifest. The generated `database/parliament.sqlite` is stored through Git LFS for deployment handoff, while the schema, source bytes, and notebook remain the reproducible authority.
 
 The fixture run completed with:
 
@@ -71,4 +71,4 @@ Fourteen physical source rows repeat a chamber/reference-number event already pr
 
 ## Reproduction
 
-The notebook defaults to the small fixture. Set `POLITIKS_SOURCE_MANIFEST=source/manifests/full_swiss_2026-07-14.jsonl` before executing it to recreate the full database. It performs no network requests and validates every manifest byte count and SHA256 first. The generated SQLite file remains ignored.
+The notebook defaults to the small fixture. Set `POLITIKS_SOURCE_MANIFEST=source/manifests/full_swiss_2026-07-14.jsonl` before executing it to recreate the full database. It performs no network requests and validates every manifest byte count and SHA256 first. The generated full SQLite artifact is stored through Git LFS for deployment handoff.

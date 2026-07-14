@@ -1,5 +1,4 @@
 * text=auto
-
 *.md text eol=lf
 *.json text eol=lf
 *.jsonl text eol=lf
@@ -9,6 +8,7 @@
 *.py text eol=lf
 *.sql text eol=lf
 *.txt text eol=lf
-
 # Preserve official source responses byte-for-byte; manifests contain their checksums.
 source/snapshots/** -text
+database/parliament.sqlite filter=lfs diff=lfs merge=lfs -text
+database/exports/*.sql.gz filter=lfs diff=lfs merge=lfs -text
