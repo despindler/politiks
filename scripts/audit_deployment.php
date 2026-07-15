@@ -46,6 +46,14 @@ try {
         'site/storage/uploads/.gitkeep',
     ];
     $problems = [];
+    $forbiddenMarkers = [
+        'playwright-valid-google-credential' => 'Test-Zugangsdaten',
+        'playwright-test-only-openai-key' => 'Test-KI-Zugangsdaten',
+        'POLITIKS_TEST_AI' => 'deterministischer KI-Testadapter',
+        'POLITIKS_TEST_AI_BOOTSTRAP' => 'deterministischer KI-Testadapter',
+        'TestAiResponsesClient' => 'deterministischer KI-Testadapter',
+        'DeterministicAiResponsesClient' => 'deterministischer KI-Testadapter',
+    ];
     foreach ($required as $path) {
         if (!in_array($path, $files, true)) {
             $problems[] = sprintf('Erforderliche Datei fehlt: %s', $path);
@@ -63,8 +71,12 @@ try {
         $absolute = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
         if (is_file($absolute) && filesize($absolute) <= 2_000_000) {
             $content = file_get_contents($absolute);
-            if (is_string($content) && str_contains($content, 'playwright-valid-google-credential')) {
-                $problems[] = sprintf('Test-Zugangsdaten im Deployment: %s', $path);
+            if (is_string($content)) {
+                foreach ($forbiddenMarkers as $marker => $description) {
+                    if (str_contains($content, $marker)) {
+                        $problems[] = sprintf('%s im Deployment: %s', ucfirst($description), $path);
+                    }
+                }
             }
         }
         if (str_ends_with(strtolower($path), '.php')) {
@@ -80,6 +92,16 @@ try {
             $problems[] = sprintf('Apache-Schutzregel fehlt: %s', $rule);
         }
     }
+    $example = file_get_contents($root . '/site/.env.example');
+    if (!is_string($example)
+        || preg_match('/^AI_FILTER_ENABLED=0$/m', $example) !== 1
+        || preg_match('/^OPENAI_API_KEY=$/m', $example) !== 1
+        || preg_match('/^OPENAI_RESPONSES_URL=https:\/\/(?:[a-z]{2}\.)?api\.openai\.com\/v1\/responses$/m', $example) !== 1) {
+        $problems[] = 'Die deploybare AI-Konfiguration muss deaktivierte, leere und offizielle Platzhalter enthalten.';
+    }
+    if (is_string($example) && preg_match('/^OPENAI_API_KEY=.+$/m', $example) === 1) {
+        $problems[] = 'OPENAI_API_KEY darf in site/.env.example keinen Wert enthalten.';
+    }
     if ($problems !== []) {
         foreach ($problems as $problem) {
             fwrite(STDERR, '- ' . $problem . PHP_EOL);
@@ -92,6 +114,8 @@ try {
         'php_files_linted' => count(array_filter($files, static fn (string $path): bool => str_ends_with(strtolower($path), '.php'))),
         'test_credentials_absent' => true,
         'development_artifacts_absent' => true,
+        'deterministic_ai_provider_absent' => true,
+        'ai_configuration_placeholder_only' => true,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Deployment-Prüfung fehlgeschlagen: ' . $error->getMessage() . PHP_EOL);

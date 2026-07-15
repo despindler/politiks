@@ -1,6 +1,7 @@
 # Secrets and local environment configuration
 .env*
 !.env.example
+!.env.ai-smoke.example
 site/.env
 
 # Generated databases and runtime data

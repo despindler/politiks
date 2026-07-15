@@ -260,6 +260,14 @@ The deterministic browser suite covers cancellation, long waits, focus, ambiguit
 npx.cmd playwright test tests/playwright/insight-wizard.spec.js --grep "AI vote filter|@visual AI"
 ```
 
+The versioned German quality set in `classification/ai-filter/v1.de.json` covers clear matches, explicit exclusions, negation, empty results, missing vote semantics, plausible ambiguity, and prompt injection as data. Its offline acceptance runner is part of `npm.cmd run verify`:
+
+```powershell
+npm.cmd run test:ai-eval
+```
+
+The production feature remains disabled by default. `DATENSCHUTZ_KI.md` contains the reviewed data-flow copy, while `DEPLOYMENT.md` covers the separate OpenAI project/key, model and quota settings, safe metrics, rotation, instant disable, and the explicitly paid development-key smoke. `npm.cmd run test:ai-live` skips with zero requests unless `.env.ai-smoke` contains `OPENAI_DEVELOPMENT_API_KEY`; it never reads the production `OPENAI_API_KEY`.
+
 The browser test fixture includes a clearly synthetic, test-only Swiss publication designed to exercise deterministic cohort changes and outliers. Production reference data continues to come exclusively from the publication pipeline.
 
 ## Campaign context

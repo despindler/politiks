@@ -20,6 +20,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 11. AI filter foundation and safe OpenAI boundary | Complete | 2026-07-15 |
 | 12. Hybrid retrieval, semantic selection, and audited API | Complete | 2026-07-15 |
 | 13. Optional Step 3 AI-selection modal | Complete | 2026-07-15 |
+| 14. AI-filter evaluation, privacy, deployment, and release acceptance | Complete | 2026-07-15 |
 
 ## Working decisions
 
@@ -526,3 +527,38 @@ Expose AI-assisted discovery as an optional, reversible Step 3 mechanism while k
 ### Deliberate boundary
 
 - Production activation, target-host privacy acceptance, operational quota/model guidance, evaluation reporting, release dump regeneration, and optional live-provider smoke testing remain isolated to Milestone 14. The feature stays disabled by default.
+
+## Milestone 14 — AI-filter evaluation, privacy, deployment, and release acceptance
+
+### Goal
+
+Prove the complete optional AI preselection against representative local data, document its quality/cost/privacy boundary, and leave production activation as an explicit, reversible operational decision.
+
+### Work completed
+
+- Added the versioned German evaluation set `classification/ai-filter/v1.de.json` with public synthetic records and exact required, forbidden, ambiguous, and empty outcomes for clear matches, exclusions, negation, unrelated criteria, missing vote semantics, plausible ambiguity, and prompt injection treated as data.
+- Added a deterministic offline evaluator to ordinary verification and a separate explicitly paid live-provider smoke. The live smoke accepts only `.env.ai-smoke`, reads only `OPENAI_DEVELOPMENT_API_KEY`, validates the official Responses endpoint, and skips with zero requests if no development key is present.
+- Added reviewed German privacy copy listing the exact criterion/public parliamentary/cohort fields sent to OpenAI and explicitly excluding Google identity, councillor names, individual choices, uploads, campaign material, and unrelated insight content. Provider-side storage remains disabled with `store=false`; current provider data-control limitations are stated rather than overstated.
+- Documented separate development/production projects and keys, the model choice, hard application rate/candidate/token/timeout bounds, provider limits, safe aggregate metrics, key rotation, immediate disable, privacy acceptance, target-host smoke, and rollback.
+- Restricted the configurable provider URL to the official global or two-letter regional OpenAI HTTPS Responses endpoint. Production remains disabled and every deployable environment example retains an empty key.
+- Strengthened operational-log integration checks: request IDs, hashes, status, cache state, latency, tokens, model, and prompt version are present; raw criteria, candidate text, identity fragments, and campaign fields are absent.
+- Removed the deterministic AI activation seam from `site/`. Playwright now injects its provider only through the non-deployable test router and the deployment audit rejects test providers, hooks, credentials, or enabled/non-empty AI examples.
+- Rebuilt the full production MariaDB dump against all 45 current schema statements, with versioned prompt seeds and empty application/AI operational tables. Replaced the five phpMyAdmin parts and checksum manifest, and added a guarded reproducible release-dump builder restricted to destructive `.env.test` use.
+
+### Verification
+
+- `npm.cmd run verify:clean` passed from a reset `.env.test` database: 45 schema statements, 37 tables, deterministic publication and two-user fixtures, 38 pure PHP checks, every authentication/insight/wizard/context/AI MariaDB suite, and 46 desktop/mobile Playwright cases in 2.7 minutes.
+- The privacy-safe AI run-log integration passed, including required safe columns, forbidden-column absence, joined prompt version, and serialized-value checks against raw criteria, candidate titles, and identity fragments. All normal verification made zero external AI requests.
+- `npm.cmd run test:ai-eval`: all seven versioned German cases passed with zero external requests.
+- `npm.cmd run test:ai-live`: safely reported `skipped` because `.env.ai-smoke` was absent and confirmed zero external requests.
+- Deployment audit passed for 57 runtime files and 36 linted PHP files; test credentials, development artifacts, deterministic providers/hooks, and active/non-placeholder AI configuration were absent.
+- The regenerated full publication reconciled all 27 reference tables, 21,569 vote-search documents, and 3,822,145 dated party-choice links. Its five parts reproduce the complete 362,910,344-byte SQL payload with SHA-256 `2ab685b43cdaa1733fbe3736b993d5b37b14c14e62887351eca6b3221cd44c4d`.
+- Existing 16 AI modal/applied-filter baselines and all other visual references passed unchanged on desktop/mobile in light/dark modes.
+
+### Known limitations and production gates
+
+- The deterministic seven-case set proves the contract and selected risk behaviors; it is not a precision/recall estimate for an evolving provider model. Every model/prompt change requires evaluation expansion, manual result review, and a new live/target-host smoke.
+- No paid provider request was authorized in this milestone, so the real key, project permissions, selected model availability, regional endpoint, latency, quota, and billing behavior remain deliberately unproven.
+- Production must remain at `AI_FILTER_ENABLED=0` until the operator completes and publishes the privacy notice, creates a separate restricted production project/key, accepts model/cost/rate settings, confirms provider data controls, and records a successful target-host smoke.
+- The local server identifies as MySQL-compatible rather than the target MariaDB 10.6.18. Schema and dump checks pass locally, but the regenerated dump and optional AI endpoint still require the documented host acceptance.
+- Provider usage policies, model availability, pricing, and data controls can change. The linked official documentation must be rechecked before activation and periodically during operation; application-side disabling remains the immediate fallback.

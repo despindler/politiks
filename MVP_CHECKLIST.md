@@ -1,6 +1,6 @@
 # MVP-Datenqualitäts- und Sicherheitscheckliste
 
-Stand: 14. Juli 2026. „Automatisiert“ bedeutet, dass der Check im Repository reproduzierbar ist; „Zielhost“ muss beim Produktions-Deployment protokolliert werden.
+Stand: 15. Juli 2026. „Automatisiert“ bedeutet, dass der Check im Repository reproduzierbar ist; „Zielhost“ muss beim Produktions-Deployment protokolliert werden.
 
 ## Datenqualität
 
@@ -29,8 +29,14 @@ Stand: 14. Juli 2026. „Automatisiert“ bedeutet, dass der Check im Repository
 - [x] Uploads sind grössenbegrenzt, dekodiert geprüft, zufällig benannt, nicht direkt öffentlich und autorisiert gestreamt.
 - [x] Das versionierte `site/` enthält keine Test-Zugangsdaten, Router, SQLite-Dateien, Snapshots oder Entwicklungswerkzeuge.
 - [x] `.env*`, Datenbanken, Uploads, Tokens und Logs sind Git-ignoriert; `.env.example` enthält nur Platzhalter.
+- [x] Die KI-Vorauswahl ist standardmässig aus, akzeptiert nur offizielle OpenAI-Responses-Endpunkte und trennt vertrauenswürdige Prompts von Kriterien/Kandidaten als Daten.
+- [x] Kriterien, öffentliche Kandidatenfelder und aggregierte Kohortenzahlen sind offengelegt; Identität, Ratsmitgliedernamen, Einzelstimmen, Uploads, Kampagnenmaterial und übrige Insight-Texte werden nicht an OpenAI gesendet.
+- [x] Das KI-Betriebsprotokoll enthält Request-ID, Hashes, Status, Laufzeit, Tokenzahlen, Modell und Prompt-Version, aber keine Rohkriterien, Kandidatentexte, Google-Identität oder Kampagneninhalte.
+- [x] Der Deployment-Audit verbietet deterministische KI-Testadapter/-zugangsdaten und verlangt deaktivierte, leere AI-Platzhalter.
 - [ ] Zielhost: Dateirechte, `.htaccess`-Sperren, Security-/Cache-Header und Log-Redaktion prüfen.
 - [ ] Zielhost: echten Google-Login und erlaubten JavaScript-Origin prüfen.
+- [ ] Zielhost: `DATENSCHUTZ_KI.md` mit Betreiberangaben/rechtlicher Prüfung veröffentlichen und OpenAI-Datenkontrollen protokollieren.
+- [ ] Zielhost: separates OpenAI-Produktionsprojekt, privaten eingeschränkten Schlüssel, Modell-/Kosten-/Ratenlimits und Notabschaltung prüfen; KI erst danach aktivieren.
 - [ ] Betrieb: verschlüsseltes MariaDB-/Upload-/Konfigurationsbackup erstellen und Restore in separater Datenbank testen.
 
 ## Release-Akzeptanz
@@ -39,4 +45,7 @@ Stand: 14. Juli 2026. „Automatisiert“ bedeutet, dass der Check im Repository
 - [x] `npm run verify:clean` setzt ausschliesslich eine `.env.test`-Datenbank zurück, erzeugt deterministische Zwei-Nutzer-/Sichtbarkeitsfixtures und führt die Gesamtsuite aus.
 - [x] Der browserbasierte kritische Pfad umfasst Katalog, Login, Scope, Mitglieder/Kohorte, Outlier, Suche/Evidenz, Kampagnenkontext, Entwurf, nicht gelisteten Link, Veröffentlichung, Signed-out-Katalog und Owner-Edit.
 - [x] Visuelle Referenzen decken Desktop/Mobile und Hell/Dunkel für Shell, Katalog, Abstimmungsarbeitsraum und Kampagnenkontext ab.
+- [x] Die versionierte deutsche KI-Auswahlevaluation deckt erforderliche, verbotene, mehrdeutige und leere Resultate ab; normale Akzeptanz verwendet null externe KI-Anfragen.
+- [x] KI-Modal und angewandter Filter sind für Desktop/Mobile sowie Hell/Dunkel visuell geprüft.
+- [ ] Optional vor KI-Freigabe: `npm.cmd run test:ai-live` mit separatem Entwicklungsschlüssel erfolgreich ausführen und Request/Modell/Token protokollieren.
 - [ ] Zielhost: Smoke-Protokoll gemäss `DEPLOYMENT.md` vollständig abhaken.

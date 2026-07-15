@@ -111,11 +111,14 @@ final class Config
             'https://api.openai.com/v1/responses',
         ) ?? '';
         $responsesParts = parse_url($responsesUrl);
+        $responsesHost = strtolower((string) ($responsesParts['host'] ?? ''));
         if (filter_var($responsesUrl, FILTER_VALIDATE_URL) === false || !is_array($responsesParts)
             || strtolower((string) ($responsesParts['scheme'] ?? '')) !== 'https'
-            || isset($responsesParts['user']) || isset($responsesParts['pass'])
+            || ($responsesParts['path'] ?? '') !== '/v1/responses'
+            || preg_match('/^(?:[a-z]{2}\.)?api\.openai\.com$/', $responsesHost) !== 1
+            || isset($responsesParts['port']) || isset($responsesParts['user']) || isset($responsesParts['pass'])
             || isset($responsesParts['query']) || isset($responsesParts['fragment'])) {
-            throw new RuntimeException('OPENAI_RESPONSES_URL muss eine HTTPS-URL ohne Zugangsdaten oder Parameter sein.');
+            throw new RuntimeException('OPENAI_RESPONSES_URL muss ein offizieller OpenAI-Responses-Endpunkt sein.');
         }
         $openAiModel = Environment::value($values, 'OPENAI_MODEL', 'gpt-5.6-luna') ?? '';
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/', $openAiModel) !== 1) {

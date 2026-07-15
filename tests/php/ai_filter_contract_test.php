@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../site/backend/bootstrap.php';
 require_once __DIR__ . '/../support/DeterministicAiResponsesClient.php';
+require_once __DIR__ . '/../../scripts/lib/AiSelectionEvaluation.php';
 
 use Politiks\App\Ai\AiFilterException;
 use Politiks\App\Ai\AiResponsesClientFactory;
@@ -11,10 +12,11 @@ use Politiks\App\Ai\AiQueryPlanContract;
 use Politiks\App\Ai\AiSelectionContract;
 use Politiks\App\Ai\OpenAiResponsesClient;
 use Politiks\TestSupport\DeterministicAiResponsesClient;
+use Politiks\Tooling\AiSelectionEvaluation;
 
 return [
     'German AI selection evaluation fixture preserves required risk cases' => static function (): void {
-        $path = __DIR__ . '/../fixtures/ai_vote_filter_eval_v1.json';
+        $path = __DIR__ . '/../../classification/ai-filter/v1.de.json';
         $fixture = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
         assertSameValue(1, $fixture['version'], 'The evaluation fixture should be explicitly versioned.');
         assertSameValue('de', $fixture['language'], 'The MVP evaluation language should be German.');
@@ -36,6 +38,13 @@ return [
                 assertTrue(is_array($case[$group]) && array_is_list($case[$group]), 'Every expected ID group must be a list.');
             }
         }
+        assertSameValue(6, count($fixture['records']), 'The evaluation must carry representative public vote records.');
+        $report = AiSelectionEvaluation::run(
+            $fixture,
+            static fn (array $case): array => $case['deterministic_result'],
+        );
+        assertSameValue(7, $report['passed'], 'Every deterministic evaluation case should meet its expected groups.');
+        assertSameValue(0, $report['failed'], 'The deterministic evaluation should have no failed cases.');
     },
     'AI query plan contract normalizes bounded retrieval hints' => static function (): void {
         $plan = AiQueryPlanContract::normalize([

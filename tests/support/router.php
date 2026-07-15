@@ -19,5 +19,24 @@ if ($path !== '/' && is_file($candidate)) {
     return false;
 }
 
-require $siteRoot . DIRECTORY_SEPARATOR . 'index.php';
+$bootstrap = $siteRoot . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPARATOR . 'bootstrap.php';
+require $bootstrap;
+require __DIR__ . DIRECTORY_SEPARATOR . 'TestAiResponsesClient.php';
+
+try {
+    Politiks\App\ApplicationFactory::create(new Politiks\App\Ai\TestAiResponsesClient())->run();
+} catch (Throwable $error) {
+    error_log('Politiks test startup failure: ' . $error::class);
+    $isApi = str_starts_with($path, '/api/');
+    http_response_code(503);
+    header('Cache-Control: no-store');
+    if ($isApi) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo '{"ok":false,"error_code":"APP_UNAVAILABLE","message":"Politiks ist vorübergehend nicht verfügbar.","details":{}}';
+    } else {
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<!doctype html><html lang="de"><meta charset="utf-8"><title>Politiks</title>'
+            . '<main><h1>Politiks</h1><p>Die Anwendung ist vorübergehend nicht verfügbar.</p></main></html>';
+    }
+}
 return true;

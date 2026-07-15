@@ -16,14 +16,14 @@ use Politiks\App\Insight\InsightStore;
 use Politiks\App\Insight\WizardStore;
 use Politiks\App\Insight\CampaignContextStore;
 use Politiks\App\Ai\AiPromptStore;
+use Politiks\App\Ai\AiResponsesClient;
 use Politiks\App\Ai\AiResponsesClientFactory;
 use Politiks\App\Ai\AiVoteFilterService;
 use Politiks\App\Ai\AiVoteFilterStore;
-use Politiks\App\Ai\TestAiResponsesClient;
 
 final class ApplicationFactory
 {
-    public static function create(): Application
+    public static function create(?AiResponsesClient $aiClientOverride = null): Application
     {
         $config = Config::load();
         error_reporting(E_ALL);
@@ -47,9 +47,8 @@ final class ApplicationFactory
             $config->storagePath,
             $config->uploadMaxBytes,
         );
-        $testAiEnabled = $config->environment === 'test' && getenv('POLITIKS_TEST_AI') === 'enabled';
         $aiClient = $config->aiFilter['enabled']
-            ? ($testAiEnabled ? new TestAiResponsesClient() : AiResponsesClientFactory::create($config->aiFilter))
+            ? ($aiClientOverride ?? AiResponsesClientFactory::create($config->aiFilter))
             : null;
         return new Application(
             $config,

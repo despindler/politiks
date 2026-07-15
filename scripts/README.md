@@ -20,3 +20,6 @@ Release commands:
 - `verify_mvp.php --env=.env.test --reset-test-database` performs the deliberately destructive clean-test acceptance sequence and refuses any environment filename other than `.env.test`.
 - `split_sql_dump.php` streams a plain or gzip SQL dump into a requested number of statement-safe `.sql.gz` files. Every part has independent session setup/cleanup so browser-based database tools can import the files consecutively in separate requests.
 - `verify_split_sql_dump.php` checks every generated gzip size and checksum, decompresses all parts, validates their wrappers and byte ranges, and proves that their combined SQL payload reproduces the source checksum.
+- `build_release_database_dump.php` destructively rebuilds only a `.env.test` database from a prior full gzip dump, applies the current idempotent schema, rejects application data, and creates a current gzip release dump without putting the database password on the command line.
+- `evaluate_ai_vote_filter.php` scores the versioned German AI-selection cases with deterministic local results and performs no network request.
+- `smoke_openai_ai_filter.php --env=.env.ai-smoke --allow-paid-api-call` performs one explicitly approved live-provider selection check with a separate development key. It refuses other environment filenames and skips without a key.

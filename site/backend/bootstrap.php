@@ -22,11 +22,3 @@ if (getenv('APP_ENV') === 'test' && getenv('POLITIKS_TEST_AUTH') === 'enabled') 
     }
     require $testBootstrap;
 }
-
-if (getenv('APP_ENV') === 'test' && getenv('POLITIKS_TEST_AI') === 'enabled') {
-    $testAiBootstrap = getenv('POLITIKS_TEST_AI_BOOTSTRAP');
-    if (!is_string($testAiBootstrap) || $testAiBootstrap === '' || !is_file($testAiBootstrap)) {
-        throw new RuntimeException('Der KI-Testadapter ist nicht verfügbar.');
-    }
-    require $testAiBootstrap;
-}

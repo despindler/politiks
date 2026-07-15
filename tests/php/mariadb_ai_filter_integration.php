@@ -273,6 +273,38 @@ try {
         throw new RuntimeException('Rate limiting occurred only after provider traffic.');
     }
 
+    $runColumns = $pdo->query(
+        "SELECT column_name FROM information_schema.columns
+         WHERE table_schema=DATABASE() AND table_name='ai_filter_run' ORDER BY ordinal_position"
+    )->fetchAll(PDO::FETCH_COLUMN);
+    foreach ([
+        'request_id', 'model', 'criteria_sha256', 'candidate_sha256', 'status', 'latency_ms',
+        'input_tokens', 'output_tokens', 'cached_input_tokens', 'prompt_template_id',
+    ] as $requiredColumn) {
+        if (!in_array($requiredColumn, $runColumns, true)) {
+            throw new RuntimeException('Privacy-safe AI run metadata lacks ' . $requiredColumn . '.');
+        }
+    }
+    foreach (['criterion', 'raw_criterion', 'candidate_text', 'email', 'google_sub', 'campaign_material'] as $forbiddenColumn) {
+        if (in_array($forbiddenColumn, $runColumns, true)) {
+            throw new RuntimeException('AI run metadata must not store ' . $forbiddenColumn . '.');
+        }
+    }
+    $safeRun = $pdo->prepare(
+        'SELECT run.request_id, run.model, run.criteria_sha256, run.candidate_sha256, run.status,
+                run.latency_ms, run.input_tokens, run.output_tokens, run.cached_input_tokens,
+                prompt.version prompt_version
+         FROM ai_filter_run run JOIN ai_prompt_template prompt ON prompt.id=run.prompt_template_id
+         WHERE run.owner_user_id=? AND run.status=\'completed\' ORDER BY run.id DESC LIMIT 1'
+    );
+    $safeRun->execute([$ownerId]);
+    $safeRunJson = json_encode($safeRun->fetch(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+    foreach ([$criterion, 'ai-filter-owner-', '@example.test', 'Steuerentlastung und Gegenfinanzierung'] as $privateValue) {
+        if (str_contains($safeRunJson, $privateValue)) {
+            throw new RuntimeException('AI run metadata leaked raw user, identity, or candidate content.');
+        }
+    }
+
     $runSummary = $pdo->prepare(
         'SELECT status, cache_hit, COUNT(*) amount FROM ai_filter_run
          WHERE owner_user_id=? GROUP BY status, cache_hit ORDER BY status, cache_hit'
@@ -289,6 +321,7 @@ try {
         'chunk_merge_valid' => true,
         'rate_limit_valid' => true,
         'unknown_id_rejected' => true,
+        'privacy_safe_run_log_valid' => true,
         'provider_requests' => count($client->requests) + count($chunkClient->requests) + count($rateClient->requests),
         'external_ai_requests' => 0,
         'run_summary' => $runSummary->fetchAll(),

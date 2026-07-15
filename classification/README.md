@@ -6,6 +6,13 @@ This directory contains derived discovery metadata, never official parliamentary
 - `rules/v1.de.json` contains transparent deterministic keyword/phrase rules. A match creates a pending suggestion with confidence and a source passage.
 - `reviews/v1.jsonl` is the append-only controlled human-review input.
 - `benchmark/v1.de.json` contains synthetic clear, ambiguous, procedural, and mixed-effect examples.
+- `ai-filter/v1.de.json` is a separate German quality set for the optional AI vote preselection, with public synthetic records and expected required, forbidden, ambiguous, and empty outcomes. It does not create reviewed political classifications.
+
+Run the AI selection set offline without a model request:
+
+```powershell
+npm.cmd run test:ai-eval
+```
 
 ## Run the offline classifier
 

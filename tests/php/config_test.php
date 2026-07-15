@@ -138,6 +138,8 @@ return [
     'AI filter configuration rejects unsafe endpoints and invalid bounds' => static function (): void {
         foreach ([
             "OPENAI_RESPONSES_URL=http://api.openai.com/v1/responses\n",
+            "OPENAI_RESPONSES_URL=https://example.org/v1/responses\n",
+            "OPENAI_RESPONSES_URL=https://api.openai.com/v1/models\n",
             "AI_FILTER_CANDIDATE_LIMIT=24\n",
             "AI_FILTER_CANDIDATE_LIMIT=25\nAI_FILTER_CHUNK_SIZE=26\n",
         ] as $invalidSettings) {
@@ -151,5 +153,15 @@ return [
                 assertTrue($rejected, 'Unsafe AI settings must be rejected.');
             });
         }
+        withTemporaryConfig(
+            productionConfigText() . "OPENAI_RESPONSES_URL=https://eu.api.openai.com/v1/responses\n",
+            static function (string $path): void {
+                assertSameValue(
+                    'https://eu.api.openai.com/v1/responses',
+                    Config::load($path)->aiFilter['responses_url'],
+                    'The documented regional OpenAI endpoint should remain available.',
+                );
+            },
+        );
     },
 ];
