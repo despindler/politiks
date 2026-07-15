@@ -222,8 +222,8 @@ final class WizardStore
         return $ids;
     }
 
-    /** @param mixed $memberIds @return array{items:list<array<string,mixed>>,total:int,limited:bool} */
-    public function votes(int $ownerId, string $publicId, mixed $memberIds, mixed $query): array
+    /** @param mixed $memberIds @param mixed $eventIds @return array{items:list<array<string,mixed>>,total:int,limited:bool} */
+    public function votes(int $ownerId, string $publicId, mixed $memberIds, mixed $query, mixed $eventIds = null): array
     {
         $ids = $this->integerList($memberIds, 200, 'Mitglieder');
         if ($ids === []) {
@@ -248,6 +248,10 @@ final class WizardStore
         );
         $evidenceStatement->execute([$insight['id']]);
         $selectedEvidence = array_map('intval', $evidenceStatement->fetchAll(PDO::FETCH_COLUMN));
+        $filterEventIds = $eventIds === null ? null : $this->integerList($eventIds, 300, 'Abstimmungen');
+        if ($filterEventIds === [] && $selectedEvidence === []) {
+            return ['items' => [], 'total' => 0, 'limited' => false];
+        }
 
         $memberPlaceholders = implode(',', array_fill(0, count($ids), '?'));
         $participationSql = " AND (EXISTS (
@@ -267,6 +271,22 @@ final class WizardStore
             array_push($parameters, ...$selectedEvidence);
         }
         $participationSql .= ')';
+
+        $eventFilterSql = '';
+        if ($filterEventIds !== null) {
+            $eventFilters = [];
+            if ($filterEventIds !== []) {
+                $eventFilters[] = 'event.source_id IN ('
+                    . implode(',', array_fill(0, count($filterEventIds), '?')) . ')';
+                array_push($parameters, ...$filterEventIds);
+            }
+            if ($selectedEvidence !== []) {
+                $eventFilters[] = 'event.source_id IN ('
+                    . implode(',', array_fill(0, count($selectedEvidence), '?')) . ')';
+                array_push($parameters, ...$selectedEvidence);
+            }
+            $eventFilterSql = ' AND (' . implode(' OR ', $eventFilters) . ')';
+        }
 
         $searchSql = '';
         if ($query !== '') {
@@ -303,7 +323,7 @@ final class WizardStore
              LEFT JOIN ref_taxonomy_term term ON term.publication_id=reviewed.publication_id
                AND term.source_id=reviewed.taxonomy_term_source_id
              WHERE event.publication_id=? AND event.chamber_source_id=?
-               AND DATE(event.occurred_at) BETWEEN ? AND ? $participationSql $searchSql
+               AND DATE(event.occurred_at) BETWEEN ? AND ? $participationSql $eventFilterSql $searchSql
              GROUP BY event.publication_id, event.source_id, document.voting_identifier,
                       document.affair_identifier, event.registration_number, event.occurred_at,
                       event.vote_type, event.division_text, event.submission_text, event.meaning_yes,

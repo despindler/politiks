@@ -121,7 +121,10 @@ final class Application
             }
             if ($method === 'GET' && preg_match('~^/api/insights/([a-f0-9]{26})/wizard$~', $path, $matches) === 1) {
                 $user = $this->requireUser();
-                Http::json(['ok' => true] + $this->wizard->state($user['id'], $matches[1]));
+                Http::json([
+                    'ok' => true,
+                    'features' => ['ai_filter' => $this->config->aiFilter['enabled']],
+                ] + $this->wizard->state($user['id'], $matches[1]));
             }
             if ($method === 'PUT' && preg_match('~^/api/insights/([a-f0-9]{26})/scope$~', $path, $matches) === 1) {
                 $this->requireCsrf();
@@ -149,7 +152,11 @@ final class Application
                 $user = $this->requireUser();
                 $body = Http::jsonBody();
                 Http::json(['ok' => true] + $this->wizard->votes(
-                    $user['id'], $matches[1], $body['member_ids'] ?? null, $body['query'] ?? ''
+                    $user['id'],
+                    $matches[1],
+                    $body['member_ids'] ?? null,
+                    $body['query'] ?? '',
+                    array_key_exists('event_ids', $body) ? $body['event_ids'] : null,
                 ));
             }
             if ($method === 'POST' && preg_match('~^/api/insights/([a-f0-9]{26})/ai-filter$~', $path, $matches) === 1) {

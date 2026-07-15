@@ -8,7 +8,9 @@
     evidence: [], votes: [], voteMap: new Map(), query: '', direction: 'all', cohesion: 'all',
     voteType: 'all', topic: 'all', classification: 'all', memberFilter: 'all',
     currentStep: 0, mobileView: 'yes', memberSearch: '', cohortSearch: '', loadingVotes: false,
-    contexts: [], transitionPromise: null, submitting: false,
+    contexts: [], transitionPromise: null, submitting: false, features: { ai_filter: false },
+    aiResult: null, aiSelected: new Set(), aiApplied: null, aiCriterion: '', aiStale: false,
+    aiBusy: false,
   };
   const steps = Array.from(root.querySelectorAll('.wizard-step'));
   const tabs = Array.from(root.querySelectorAll('[data-step-target]'));
@@ -24,6 +26,9 @@
   let voteBusyCleanup = null;
   let activitySequence = 0;
   let activeActivityToken = 0;
+  let aiRequestSequence = 0;
+  let aiAbortController = null;
+  let aiSlowTimer = null;
 
   async function api(path, options = {}) {
     const headers = new Headers(options.headers || {});
@@ -203,6 +208,7 @@
     const payload = await api(`/api/insights/${publicId}/scope`, { method: 'PUT', body: JSON.stringify(nextScope) });
     state.insight.scope = payload.scope;
     if (scopeChanged) {
+      invalidateAiResult();
       state.eligible = []; state.selected.clear(); state.baseline.clear(); state.evidence = [];
       state.votes = []; state.voteMap.clear();
       renderMembers(); renderVotes();
@@ -276,6 +282,7 @@
       .forEach((member) => list.append(memberOption(member)));
     document.querySelector('[data-member-summary]').textContent = `${state.selected.size} von ${state.eligible.length} wählbaren Mitgliedern ausgewählt`;
     renderCohort();
+    renderAiFilterControl();
   }
 
   function renderCohort() {
@@ -289,8 +296,236 @@
       : `Mehrheit von ${state.selected.size} ausgewählten Mitgliedern`;
   }
 
+  function renderAiFilterControl() {
+    const open = document.querySelector('[data-ai-open]');
+    const availability = document.querySelector('[data-ai-availability]');
+    open.disabled = !state.features.ai_filter || !state.selected.size || state.aiBusy;
+    if (!state.features.ai_filter) {
+      availability.textContent = 'Die KI-Vorauswahl ist auf dieser Installation derzeit nicht aktiviert. Die normalen Filter bleiben vollständig verfügbar.';
+    } else if (!state.selected.size) {
+      availability.textContent = 'Wähle mindestens ein Mitglied, bevor du die optionale KI-Vorauswahl startest.';
+    } else {
+      availability.textContent = 'Die KI-Vorauswahl ist eine zusätzliche, jederzeit entfernbare Suchhilfe. Sie ist weder offiziell noch geprüft und wählt keine Evidenz aus.';
+    }
+    const active = document.querySelector('[data-ai-active]');
+    const applied = state.aiApplied && !state.aiStale;
+    active.classList.toggle('d-none', !applied);
+    if (applied) {
+      const criterion = state.aiCriterion.length > 120 ? `${state.aiCriterion.slice(0, 117)}…` : state.aiCriterion;
+      document.querySelector('[data-ai-active-copy]').textContent = `${state.aiApplied.size} Treffer · ${criterion}`;
+    }
+  }
+
+  function updateAiCharacterCount() {
+    document.querySelector('[data-ai-character-count]').textContent = String(
+      document.querySelector('[data-ai-criterion]').value.length,
+    );
+  }
+
+  function renderAiScopeSummary() {
+    const scope = scopePayload();
+    const chamber = state.options?.chambers.find((item) => item.id === scope.chamber_id)?.name || 'Rat nicht gewählt';
+    const party = state.options?.parties.find((item) => item.id === scope.party_id)?.name || 'Partei nicht gewählt';
+    const names = state.eligible.filter((member) => state.selected.has(member.id)).map((member) => member.name);
+    const members = names.length <= 4 ? names.join(', ') : `${names.slice(0, 4).join(', ')} und ${names.length - 4} weitere`;
+    const summary = document.querySelector('[data-ai-scope-summary]');
+    summary.replaceChildren(
+      node('p', 'eyebrow mb-1', 'Aktuelle Berechnungsbasis'),
+      node('p', 'fw-semibold mb-1', `${party} · ${chamber} · ${scope.period_from || '–'} bis ${scope.period_to || '–'}`),
+      node('p', 'small text-body-secondary mb-0', `${state.selected.size} Mitglieder: ${members || 'keine Auswahl'}. Bestehende normale Filter werden nach dem Anwenden zusätzlich berücksichtigt.`),
+    );
+  }
+
+  function aiPlanPill(icon, text) {
+    const pill = node('span', 'ai-plan-pill');
+    const symbol = node('i', `bi ${icon}`); symbol.setAttribute('aria-hidden', 'true');
+    pill.append(symbol, document.createTextNode(text));
+    return pill;
+  }
+
+  function aiResultItem(item, group) {
+    const wrapper = node('div', 'ai-result-item');
+    const input = document.createElement('input');
+    input.type = 'checkbox'; input.className = 'form-check-input'; input.value = String(item.id);
+    input.id = `ai-result-${group}-${item.id}`; input.checked = state.aiSelected.has(item.id);
+    input.addEventListener('change', () => {
+      if (input.checked) state.aiSelected.add(item.id); else state.aiSelected.delete(item.id);
+      renderAiApplyButton();
+    });
+    const copy = node('div', 'ai-result-copy');
+    const label = node('label', 'ai-result-title d-block fw-semibold', item.title || `Abstimmung ${item.id}`);
+    label.htmlFor = input.id;
+    const meta = node('div', 'small text-body-secondary mt-1', [
+      item.voting_identifier, item.affair_identifier, item.occurred_on, item.vote_type,
+    ].filter(Boolean).join(' · '));
+    const reason = node('p', 'ai-result-reason small mb-0 mt-2', item.reason);
+    copy.append(label, meta, reason);
+    const facts = [item.exact_question, item.meaning_yes, item.meaning_no].filter(Boolean);
+    if (facts.length) {
+      const details = node('details', 'ai-result-details small');
+      details.append(node('summary', 'fw-semibold', 'Abstimmungsdetails prüfen'));
+      const body = node('div', 'pt-2');
+      if (item.exact_question) body.append(node('p', 'mb-2', item.exact_question));
+      if (item.meaning_yes) body.append(node('p', 'mb-1', `Bedeutung Ja: ${item.meaning_yes}`));
+      if (item.meaning_no) body.append(node('p', 'mb-1', `Bedeutung Nein: ${item.meaning_no}`));
+      if (item.official_metadata) body.append(node('p', 'mb-1 text-body-secondary', `Offizielle Metadaten: ${item.official_metadata}`));
+      if (item.reviewed_classifications) body.append(node('p', 'mb-1 text-body-secondary', `Geprüfte Klassifikation: ${item.reviewed_classifications}`));
+      body.append(node('p', 'mb-0 text-body-secondary', `Richtung im aktuellen Mitgliederkreis: ${choiceLabel(item.cohort_direction)}`));
+      details.append(body); copy.append(details);
+    }
+    wrapper.append(input, copy);
+    return wrapper;
+  }
+
+  function renderAiApplyButton() {
+    const apply = document.querySelector('[data-ai-apply]');
+    const canApply = Boolean(state.aiResult) && !state.aiStale && state.aiSelected.size > 0 && !state.aiBusy;
+    apply.disabled = !canApply;
+    apply.replaceChildren();
+    const icon = node('i', 'bi bi-funnel me-1'); icon.setAttribute('aria-hidden', 'true');
+    apply.append(icon, document.createTextNode(
+      state.aiSelected.size ? `${state.aiSelected.size} als Filter anwenden` : 'Treffer auswählen',
+    ));
+  }
+
+  function renderAiModal() {
+    renderAiScopeSummary();
+    const results = document.querySelector('[data-ai-results]');
+    const run = document.querySelector('[data-ai-run]');
+    const apply = document.querySelector('[data-ai-apply]');
+    if (!state.aiResult) {
+      results.classList.add('d-none'); apply.classList.add('d-none');
+      run.classList.remove('btn-outline-primary'); run.classList.add('btn-primary');
+      run.lastChild.textContent = 'Vorauswahl starten';
+      renderAiApplyButton(); return;
+    }
+    results.classList.remove('d-none'); apply.classList.remove('d-none');
+    run.classList.remove('btn-primary'); run.classList.add('btn-outline-primary');
+    run.lastChild.textContent = 'Erneut analysieren';
+    document.querySelector('[data-ai-stale]').classList.toggle('d-none', !state.aiStale);
+    const matches = document.querySelector('[data-ai-matches]');
+    const ambiguous = document.querySelector('[data-ai-ambiguous]');
+    matches.replaceChildren(); ambiguous.replaceChildren();
+    state.aiResult.matches.forEach((item) => matches.append(aiResultItem(item, 'match')));
+    state.aiResult.ambiguous.forEach((item) => ambiguous.append(aiResultItem(item, 'ambiguous')));
+    if (!state.aiResult.matches.length) matches.append(node('p', 'small text-body-secondary p-2 mb-0', 'Keine eindeutigen Treffer.'));
+    if (!state.aiResult.ambiguous.length) ambiguous.append(node('p', 'small text-body-secondary p-2 mb-0', 'Keine mehrdeutigen Treffer.'));
+    document.querySelector('[data-ai-match-count]').textContent = String(state.aiResult.matches.length);
+    document.querySelector('[data-ai-ambiguous-count]').textContent = String(state.aiResult.ambiguous.length);
+    const total = state.aiResult.matches.length + state.aiResult.ambiguous.length;
+    document.querySelector('[data-ai-match-section]').classList.toggle('d-none', total === 0);
+    document.querySelector('[data-ai-ambiguous-section]').classList.toggle('d-none', total === 0);
+    document.querySelector('[data-ai-result-summary]').textContent = `${total} von ${state.aiResult.candidate_count} geprüften Kandidaten`;
+    document.querySelector('[data-ai-cache-note]').textContent = state.aiResult.cache_hit ? 'Aus sicherem Zwischenspeicher' : `Modell: ${state.aiResult.model}`;
+    const plan = document.querySelector('[data-ai-plan]'); plan.replaceChildren();
+    state.aiResult.search_plan.search_terms.forEach((term) => plan.append(aiPlanPill('bi-search', term)));
+    state.aiResult.search_plan.exclude_terms.forEach((term) => plan.append(aiPlanPill('bi-dash-circle', `ohne ${term}`)));
+    if (state.aiResult.search_plan.date_from || state.aiResult.search_plan.date_to) {
+      plan.append(aiPlanPill('bi-calendar3', `${state.aiResult.search_plan.date_from || '…'} bis ${state.aiResult.search_plan.date_to || '…'}`));
+    }
+    state.aiResult.search_plan.vote_types.forEach((type) => plan.append(aiPlanPill('bi-ui-checks', type)));
+    document.querySelector('[data-ai-empty]').classList.toggle('d-none', total !== 0);
+    renderAiApplyButton();
+  }
+
+  function invalidateAiResult() {
+    aiAbortController?.abort();
+    if (state.aiResult) state.aiStale = true;
+    state.aiApplied = null;
+    renderAiFilterControl(); renderAiModal();
+  }
+
+  function openAiModal() {
+    if (!state.features.ai_filter || !state.selected.size) return;
+    const criterion = document.querySelector('[data-ai-criterion]');
+    if (!criterion.value && state.aiCriterion) criterion.value = state.aiCriterion;
+    updateAiCharacterCount(); renderAiModal();
+    bootstrap.Modal.getOrCreateInstance('#ai-filter-modal').show();
+  }
+
+  async function runAiFilter(event) {
+    event.preventDefault();
+    if (state.aiBusy) return;
+    const criterionInput = document.querySelector('[data-ai-criterion]');
+    const criterion = criterionInput.value.trim();
+    const errorBox = document.querySelector('[data-ai-error]');
+    if (criterion.length < 3 || criterion.length > 1000) {
+      errorBox.textContent = 'Das Auswahlkriterium muss zwischen 3 und 1000 Zeichen lang sein.';
+      errorBox.classList.remove('d-none'); errorBox.focus(); return;
+    }
+    const sequence = ++aiRequestSequence;
+    aiAbortController?.abort(); aiAbortController = new AbortController();
+    state.aiBusy = true; renderAiFilterControl();
+    const form = document.querySelector('[data-ai-form]');
+    const progress = document.querySelector('[data-ai-progress]');
+    const progressCopy = document.querySelector('[data-ai-progress-copy]');
+    const run = document.querySelector('[data-ai-run]');
+    const restoreRun = makeButtonBusy(run, 'Vorauswahl läuft …');
+    form.setAttribute('aria-busy', 'true'); criterionInput.disabled = true;
+    document.querySelectorAll('[data-ai-example]').forEach((button) => { button.disabled = true; });
+    errorBox.classList.add('d-none'); progress.classList.remove('d-none');
+    document.querySelector('[data-ai-results]').classList.toggle('busy-region', Boolean(state.aiResult));
+    progressCopy.textContent = 'Zuerst wird eine Suchstrategie erstellt, danach werden nur passende Kandidaten geprüft.';
+    aiSlowTimer = window.setTimeout(() => {
+      progressCopy.textContent = 'Die Analyse dauert etwas länger. Du kannst das Fenster jederzeit schliessen und damit die laufende Anfrage abbrechen.';
+    }, 5000);
+    try {
+      const payload = await api(`/api/insights/${publicId}/ai-filter`, {
+        method: 'POST', body: JSON.stringify({ criterion, member_ids: Array.from(state.selected) }),
+        signal: aiAbortController.signal,
+      });
+      if (sequence !== aiRequestSequence) return;
+      state.aiResult = payload.filter; state.aiCriterion = criterion; state.aiStale = false;
+      state.aiSelected = new Set(payload.filter.matches.map((item) => item.id));
+      renderAiModal();
+    } catch (error) {
+      if (error.name !== 'AbortError' && sequence === aiRequestSequence) {
+        errorBox.textContent = error.message || 'Die KI-Vorauswahl konnte nicht erstellt werden.';
+        errorBox.classList.remove('d-none'); errorBox.focus();
+      }
+    } finally {
+      if (sequence === aiRequestSequence) {
+        if (aiSlowTimer !== null) window.clearTimeout(aiSlowTimer);
+        aiSlowTimer = null; state.aiBusy = false; aiAbortController = null;
+        form.setAttribute('aria-busy', 'false'); criterionInput.disabled = false;
+        document.querySelectorAll('[data-ai-example]').forEach((button) => { button.disabled = false; });
+        progress.classList.add('d-none'); document.querySelector('[data-ai-results]').classList.remove('busy-region');
+        restoreRun(); renderAiFilterControl(); renderAiModal();
+        if (!document.querySelector('#ai-filter-modal').classList.contains('show')) {
+          document.querySelector('[data-ai-open]').focus();
+        }
+      }
+    }
+  }
+
+  async function applyAiFilter() {
+    if (!state.aiResult || state.aiStale || !state.aiSelected.size || state.aiBusy) return;
+    state.aiApplied = new Set(state.aiSelected);
+    state.aiCriterion = document.querySelector('[data-ai-criterion]').value.trim();
+    bootstrap.Modal.getInstance('#ai-filter-modal')?.hide(); renderAiFilterControl();
+    try { await loadVotes(); } catch (error) { showError(error); }
+  }
+
+  async function clearAiFilter() {
+    if (!state.aiApplied) return;
+    state.aiApplied = null; renderAiFilterControl();
+    try { await loadVotes(); } catch (error) { showError(error); }
+  }
+
+  async function discardAiResult() {
+    const hadApplied = Boolean(state.aiApplied);
+    aiAbortController?.abort(); state.aiResult = null; state.aiSelected.clear(); state.aiApplied = null;
+    state.aiCriterion = ''; state.aiStale = false;
+    const criterion = document.querySelector('[data-ai-criterion]'); criterion.value = ''; updateAiCharacterCount();
+    renderAiModal(); renderAiFilterControl(); bootstrap.Modal.getInstance('#ai-filter-modal')?.hide();
+    if (hadApplied) {
+      try { await loadVotes(); } catch (error) { showError(error); }
+    }
+  }
+
   function changeMember(id, checked) {
     if (checked) state.selected.add(id); else state.selected.delete(id);
+    invalidateAiResult();
     renderMembers();
     if (state.currentStep === 2) {
       clearTimeout(memberSaveTimer);
@@ -356,7 +591,11 @@
     try {
       const payload = await api(`/api/insights/${publicId}/votes`, {
         method: 'POST',
-        body: JSON.stringify({ member_ids: Array.from(state.selected), query: state.query }),
+        body: JSON.stringify({
+          member_ids: Array.from(state.selected),
+          query: state.query,
+          ...(state.aiApplied && !state.aiStale ? { event_ids: Array.from(state.aiApplied) } : {}),
+        }),
         signal: voteAbortController.signal,
       });
       if (requestId !== voteRequestSequence) return;
@@ -400,6 +639,7 @@
       const member = vote.members.find((entry) => String(entry.id) === state.memberFilter);
       if (!member || !['yes', 'no'].includes(vote.direction) || !['yes', 'no'].includes(member.choice) || member.choice === vote.direction) return false;
     }
+    if (state.aiApplied && !state.aiStale && !state.aiApplied.has(vote.id)) return false;
     return true;
   }
 
@@ -436,7 +676,7 @@
   }
 
   function choiceLabel(choice) {
-    return { yes: 'Ja', no: 'Nein', abstain: 'Enthalten', other: 'Andere Stimme', not_participating: 'Nicht teilgenommen', no_mandate: 'Kein Mandat' }[choice] || choice;
+    return { yes: 'Ja', no: 'Nein', split: 'Geteilt', non_directional: 'Nicht gerichtet', abstain: 'Enthalten', other: 'Andere Stimme', not_participating: 'Nicht teilgenommen', no_mandate: 'Kein Mandat' }[choice] || choice;
   }
 
   function badge(text, className = 'text-bg-light border') {
@@ -445,6 +685,7 @@
 
   function voteCard(vote) {
     const details = node('details', 'vote-card');
+    details.dataset.voteId = String(vote.id);
     const summary = node('summary');
     const heading = node('div', 'fw-semibold mb-2', vote.title);
     const meta = node('div', 'vote-meta mb-2', [vote.affair_identifier, vote.voting_identifier, vote.occurred_at?.slice(0, 10), vote.vote_type].filter(Boolean).join(' · '));
@@ -845,6 +1086,7 @@
         : 'Die Berechnung dauert etwas länger – bitte warten.',
       controls: '[data-step-target], [data-next], [data-prev]',
       formBusy: true,
+      activityDelay: 0,
     }, transition);
     try {
       return await state.transitionPromise;
@@ -912,6 +1154,8 @@
       state.csrf = session.csrf_token;
       const payload = await api(`/api/insights/${publicId}/wizard`);
       state.insight = payload.insight; state.options = payload.options;
+      state.features = payload.features || { ai_filter: false };
+      renderAiFilterControl();
       state.selected = new Set(payload.insight.members.map((member) => member.id));
       state.baseline = new Set(state.selected); state.evidence = payload.insight.evidence_ids;
       initializeScope();
@@ -931,13 +1175,13 @@
   root.querySelectorAll('[data-prev]').forEach((button) => button.addEventListener('click', () => showStep(state.currentStep - 1, true, button)));
   root.addEventListener('submit', submitWizard);
   document.querySelector('#member-search').addEventListener('input', (event) => { state.memberSearch = event.target.value; renderMembers(); });
-  document.querySelector('[data-members-all]').addEventListener('click', () => { state.selected = new Set(state.eligible.map((member) => member.id)); renderMembers(); });
-  document.querySelector('[data-members-none]').addEventListener('click', () => { state.selected.clear(); renderMembers(); });
+  document.querySelector('[data-members-all]').addEventListener('click', () => { state.selected = new Set(state.eligible.map((member) => member.id)); invalidateAiResult(); renderMembers(); });
+  document.querySelector('[data-members-none]').addEventListener('click', () => { state.selected.clear(); invalidateAiResult(); renderMembers(); });
   document.querySelector('[data-cohort-toggle]').addEventListener('click', () => document.querySelector('[data-cohort-editor]').classList.toggle('d-none'));
-  document.querySelector('[data-cohort-reset]').addEventListener('click', () => { state.selected = new Set(state.baseline); renderMembers(); saveMembers().then(loadVotes).catch(showError); });
+  document.querySelector('[data-cohort-reset]').addEventListener('click', () => { state.selected = new Set(state.baseline); invalidateAiResult(); renderMembers(); saveMembers().then(loadVotes).catch(showError); });
   document.querySelector('[data-cohort-search]').addEventListener('input', (event) => { state.cohortSearch = event.target.value; renderCohort(); });
-  document.querySelector('[data-vote-search]').addEventListener('click', () => { state.query = document.querySelector('#vote-search').value; loadVotes().catch(showError); });
-  document.querySelector('#vote-search').addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); state.query = event.target.value; loadVotes().catch(showError); } });
+  document.querySelector('[data-vote-search]').addEventListener('click', () => { const query = document.querySelector('#vote-search').value; if (query !== state.query) invalidateAiResult(); state.query = query; loadVotes().catch(showError); });
+  document.querySelector('#vote-search').addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); if (event.target.value !== state.query) invalidateAiResult(); state.query = event.target.value; loadVotes().catch(showError); } });
   document.querySelectorAll('[data-direction]').forEach((button) => button.addEventListener('click', () => { state.direction = button.dataset.direction; document.querySelectorAll('[data-direction]').forEach((item) => item.classList.toggle('active', item === button)); renderVotes(); }));
   document.querySelector('[data-cohesion-filter]').addEventListener('change', (event) => { state.cohesion = event.target.value; renderVotes(); });
   document.querySelector('[data-vote-type-filter]').addEventListener('change', (event) => { state.voteType = event.target.value; renderVotes(); });
@@ -947,6 +1191,24 @@
   document.querySelectorAll('[data-mobile-view]').forEach((button) => button.addEventListener('click', () => { state.mobileView = button.dataset.mobileView; document.querySelectorAll('[data-mobile-view]').forEach((item) => item.classList.toggle('active', item === button)); renderVotes(); }));
   document.querySelector('[data-outlier-toggle]').addEventListener('click', () => document.querySelector('[data-outlier-panel]').classList.toggle('d-none'));
   document.querySelector('[data-evidence-review]').addEventListener('click', () => bootstrap.Modal.getOrCreateInstance('#evidence-modal').show());
+  document.querySelector('[data-ai-open]').addEventListener('click', openAiModal);
+  document.querySelector('[data-ai-form]').addEventListener('submit', runAiFilter);
+  document.querySelector('[data-ai-apply]').addEventListener('click', applyAiFilter);
+  document.querySelector('[data-ai-clear]').addEventListener('click', clearAiFilter);
+  document.querySelector('[data-ai-discard]').addEventListener('click', discardAiResult);
+  document.querySelector('[data-ai-criterion]').addEventListener('input', updateAiCharacterCount);
+  document.querySelectorAll('[data-ai-example]').forEach((button) => button.addEventListener('click', () => {
+    const criterion = document.querySelector('[data-ai-criterion]');
+    criterion.value = button.dataset.aiExample; updateAiCharacterCount(); criterion.focus();
+  }));
+  document.querySelector('#ai-filter-modal').addEventListener('hidden.bs.modal', () => {
+    aiAbortController?.abort();
+    if (aiSlowTimer !== null) window.clearTimeout(aiSlowTimer);
+    document.querySelector('[data-ai-open]').focus();
+  });
+  document.querySelector('#ai-filter-modal').addEventListener('shown.bs.modal', () => {
+    document.querySelector('[data-ai-criterion]').focus();
+  });
   document.querySelectorAll('[data-context-add]').forEach((button) => button.addEventListener('click', () => openContextModal(button.dataset.contextAdd)));
   document.querySelector('[data-context-form]').addEventListener('submit', saveContext);
   document.querySelector('[data-theme-cycle]').addEventListener('click', () => { const order = ['system', 'light', 'dark']; const current = document.documentElement.dataset.themePreference || 'system'; applyTheme(order[(order.indexOf(current) + 1) % order.length]); });

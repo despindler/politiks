@@ -19,6 +19,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 10. End-to-end hardening and MVP release | Complete | 2026-07-14 |
 | 11. AI filter foundation and safe OpenAI boundary | Complete | 2026-07-15 |
 | 12. Hybrid retrieval, semantic selection, and audited API | Complete | 2026-07-15 |
+| 13. Optional Step 3 AI-selection modal | Complete | 2026-07-15 |
 
 ## Working decisions
 
@@ -498,3 +499,30 @@ Turn a German criterion into a bounded, transparent preselection over the curren
 
 - The endpoint is production-ready but no wizard control invokes it yet. The accessible, reversible modal, applied-filter pill, cancellation/stale-result behavior, and new visual baselines are isolated to Milestone 13.
 - Ordinary verification never uses an external model or key. A real provider smoke remains an explicit opt-in release task after privacy and quota configuration in Milestone 14.
+
+## Milestone 13 — Optional Step 3 AI-selection modal
+
+### Goal
+
+Expose AI-assisted discovery as an optional, reversible Step 3 mechanism while keeping it visibly and behaviorally separate from official facts, reviewed classifications, deterministic filters, and evidence.
+
+### Work completed
+
+- Added a full-width `Mit KI eingrenzen` entry point and an accessible, scrollable Bootstrap modal with German experimental-status copy, explicit OpenAI processing disclosure, current scope/cohort summary, bounded criterion input, examples, progress, long-wait guidance, and cancellation.
+- Presented matching and ambiguous results separately with counts, editable checkboxes, short model reasons, identifiers, date/type, cohort direction, and expandable official question/Yes/No/classification facts for human inspection.
+- Kept the result private to the page session. Closing preserves it; explicit discard clears it; changing scope, selected members, or an executed keyword search marks it stale and prevents application until rerun.
+- Applying a suggestion set sends only validated immutable vote IDs back through the authoritative vote endpoint and creates a removable Step 3 filter pill. It never creates evidence, a reviewed classification, a claim, or public content; existing evidence remains intact even when outside the filtered list.
+- Added safe empty and provider-error rendering, disabled duplicate actions, request abortion and sequence protection, focus restoration, and visible feature-disabled guidance. The normal keyword, direction, cohesion, type, topic, classification, and member filters remain usable independently and combine with an applied AI filter.
+- Added deterministic Playwright coverage and 16 reviewed image baselines for populated, empty, error, and applied states across desktop/mobile and light/dark modes. The deterministic provider remains outside `site/`, and browser tests use a raised test-only rate limit without external requests.
+
+### Verification
+
+- JavaScript and PHP syntax checks, whitespace checks, and the MariaDB wizard integration passed, including authoritative explicit event-ID filtering and retained evidence behavior.
+- Playwright verified delayed-request progress, the five-second long-wait message, duplicate-action blocking, close-time cancellation, focus restoration, result persistence, fact inspection, ambiguous handling, apply/clear, cohort invalidation, discard, and zero automatic evidence selection on desktop and mobile.
+- All 16 AI UI baselines were regenerated with deterministic data and visually inspected. The populated snapshot targets the actual results, the applied snapshot avoids sticky-overlay false positives, and mobile actions remain visible in the scrollable modal footer.
+- `npm.cmd run verify` passed 37 pure PHP tests, all MariaDB authentication/insight/wizard/context/AI smoke suites, the 57-file deployment audit with 36 linted PHP files, and all 46 desktop/mobile Playwright cases.
+- External AI requests during all milestone verification: 0.
+
+### Deliberate boundary
+
+- Production activation, target-host privacy acceptance, operational quota/model guidance, evaluation reporting, release dump regeneration, and optional live-provider smoke testing remain isolated to Milestone 14. The feature stays disabled by default.

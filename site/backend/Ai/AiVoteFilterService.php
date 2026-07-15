@@ -294,6 +294,11 @@ final class AiVoteFilterService
                 'voting_identifier' => $candidate['voting_identifier'],
                 'affair_identifier' => $candidate['affair_identifier'],
                 'cohort_direction' => $candidate['cohort_direction'],
+                'exact_question' => $candidate['exact_question'],
+                'meaning_yes' => $candidate['meaning_yes'],
+                'meaning_no' => $candidate['meaning_no'],
+                'official_metadata' => $candidate['official_metadata'],
+                'reviewed_classifications' => $candidate['reviewed_classifications'],
             ];
         }
         return $result;

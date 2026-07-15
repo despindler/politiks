@@ -49,6 +49,7 @@ module.exports = defineConfig({
       AI_FILTER_ENABLED: '1',
       OPENAI_API_KEY: 'playwright-test-only-openai-key',
       OPENAI_MODEL: 'playwright-deterministic-model',
+      AI_FILTER_HOURLY_LIMIT: '100',
       POLITIKS_TEST_AI: 'enabled',
       POLITIKS_TEST_AI_BOOTSTRAP: path.resolve(__dirname, 'tests/support/TestAiResponsesClient.php'),
     },

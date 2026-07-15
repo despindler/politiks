@@ -145,6 +145,7 @@ test('@visual campaign context remains composed in both themes', async ({ page }
       image.style.visibility = 'hidden';
       image.parentElement.style.background = '#050505';
     });
+    await page.locator('.context-video iframe').evaluate((frame) => { frame.style.visibility = 'hidden'; });
     await page.locator('.app-navbar').evaluate((element) => { element.style.display = 'none'; });
     const target = page.locator('#wizard-step-4');
     for (const theme of ['light', 'dark']) {

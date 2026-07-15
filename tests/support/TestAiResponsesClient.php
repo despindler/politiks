@@ -20,6 +20,7 @@ final class TestAiResponsesClient implements AiResponsesClient
                 str_contains($criterion, 'grundversorgung') => ['Grundversorgung'],
                 str_contains($criterion, 'plattform') => ['Plattformen'],
                 str_contains($criterion, 'energie') => ['Energien'],
+                str_contains($criterion, 'raumfahrt') => ['Raumfahrt'],
                 default => ['TEST'],
             };
             return $this->response([

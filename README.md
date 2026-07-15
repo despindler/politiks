@@ -252,6 +252,14 @@ npm.cmd run test:ai-filter-db
 npx.cmd playwright test tests/playwright/ai-filter-api.spec.js
 ```
 
+When enabled, Step 3 exposes this endpoint through the optional `Mit KI eingrenzen` modal. The modal labels its output as an experimental preselection, discloses that the criterion and public parliamentary fields are processed by OpenAI, and excludes identity, campaign material, and the user's insight text. Matching and ambiguous suggestions stay editable and private in the current page session. Applying them creates only a removable vote-list filter; it does not select evidence. Closing preserves the current preview, `Verwerfen` clears it, and changing the parliamentary scope, selected cohort, or executed keyword search marks it stale until it is rerun.
+
+The deterministic browser suite covers cancellation, long waits, focus, ambiguity, stale results, evidence isolation, and the populated/empty/error/applied states on desktop and mobile in both themes:
+
+```powershell
+npx.cmd playwright test tests/playwright/insight-wizard.spec.js --grep "AI vote filter|@visual AI"
+```
+
 The browser test fixture includes a clearly synthetic, test-only Swiss publication designed to exercise deterministic cohort changes and outliers. Production reference data continues to come exclusively from the publication pipeline.
 
 ## Campaign context

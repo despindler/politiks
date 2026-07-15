@@ -116,6 +116,18 @@ try {
     if (count($exact['items']) !== 1 || $exact['items'][0]['id'] !== 910303 || $exact['items'][0]['match_context'] === null) {
         throw new RuntimeException('Exact identifier lookup or highlighted match context failed.');
     }
+    $eventFiltered = $wizard->votes(
+        $ownerId,
+        $draft['public_id'],
+        $allMemberIds,
+        '',
+        [910301, 910305],
+    );
+    $eventFilteredIds = array_column($eventFiltered['items'], 'id');
+    sort($eventFilteredIds);
+    if ($eventFilteredIds !== [910301, 910305]) {
+        throw new RuntimeException('Explicit AI-result event filtering returned records outside the supplied IDs.');
+    }
     if ($byId[910301]['official_topics'] !== ['Wirtschaft']
         || $byId[910301]['reviewed_classifications'] !== ['Wirtschaftspolitik']) {
         throw new RuntimeException('Official and reviewed classifications were not kept distinct.');
