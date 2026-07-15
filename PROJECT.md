@@ -18,6 +18,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 9. Campaign-context attachments | Complete | 2026-07-14 |
 | 10. End-to-end hardening and MVP release | Complete | 2026-07-14 |
 | 11. AI filter foundation and safe OpenAI boundary | Complete | 2026-07-15 |
+| 12. Hybrid retrieval, semantic selection, and audited API | Complete | 2026-07-15 |
 
 ## Working decisions
 
@@ -466,3 +467,34 @@ Prepare a disabled-by-default, testable, privacy-conscious boundary for optional
 ### Deliberate boundary
 
 - This milestone does not expose an HTTP route or UI and cannot spend model quota by itself. Hybrid retrieval, endpoint orchestration, rate enforcement, cache use, and deterministic evaluation belong to Milestone 12; the reversible modal and Playwright visual coverage belong to Milestone 13.
+
+## Milestone 12 — Hybrid retrieval, semantic selection, and audited API
+
+### Goal
+
+Turn a German criterion into a bounded, transparent preselection over the current insight scope without sending the full parliamentary database to a model or mutating evidence.
+
+### Work completed
+
+- Added a second versioned German prompt and strict contract for query planning: bounded search terms/synonyms, exclusions, optional date limits, and known vote-type hints. Malformed dates, reversed ranges, unknown types, control characters, excessive terms, and empty plans fail closed.
+- Added an owner-only, CSRF-protected `POST /api/insights/{public-id}/ai-filter` route. It validates the current transient member cohort against the insight's formal party, chamber mandates, period, immutable publication, and ownership before retrieval.
+- Added hybrid MariaDB retrieval combining exact voting/affair/registration identifiers, full-text and escaped substring matching, exclusions, date/type hints, chamber/period scope, and recorded participation by the selected cohort. Compact candidates retain explicit vote semantics, official/reviewed metadata, and server-calculated cohort counts/direction.
+- Added bounded chunk selection, strict per-chunk candidate-ID validation, deterministic match/ambiguity merging, short reasons, and preview metadata. The response remains private discovery data and never creates evidence or changes the insight.
+- Added per-user hourly limiting, time-limited cache reuse, and safe run accounting. Cache keys include owner, insight, publication, both prompt versions, configured model, normalized criterion hash, selected-cohort hash, and candidate-content hash; immutable candidates are recalculated before a cache hit is accepted.
+- Added stable failure states for disabled, rate-limited, refused, timed-out, malformed, and provider-error outcomes. Run rows contain hashes/counts/status/model/tokens/latency; raw criteria, candidates, identities, and secrets are not written to operational logs.
+- Added a deterministic AI bootstrap adapter under `tests/support/` and an HTTP contract test. The deployable `site/` contains only the production interfaces and the guarded test-adapter loading seam, never the deterministic provider itself.
+- Added the versioned German evaluation fixture covering a clear match, explicit exclusion, negation, unrelated empty result, missing Yes/No semantics, plausible ambiguity, and prompt-injection-like text.
+- Scoped the pre-existing wizard integration candidate lookup to its deterministic publication. This avoids an unindexed cross-publication scan when `.env.test` also contains the full Swiss dataset.
+
+### Verification
+
+- `php tests/php/run.php`: 37 passed, including query-plan/schema bounds and the seven required evaluation-risk categories.
+- `site/database/schema.sql`: 45 idempotent statements and 37 tables in local `.env.test` MariaDB/MySQL-compatible storage.
+- `npm.cmd run test:ai-filter-db`: hybrid retrieval, exact IDs, ownership/cohort validation, cache reuse, candidate/cohort invalidation, exclusion/date/type hints, three-chunk merge, rate limiting, and unknown-ID rejection passed; 16 deterministic provider calls and 0 external calls.
+- HTTP Playwright contract passed on desktop and mobile: anonymous/CSRF rejection, cross-owner 404, deterministic structured result, authoritative cohort direction, unique request IDs, and second-request cache hit.
+- `npm.cmd run verify` passed the PHP, authentication, insight, wizard, campaign-context, AI foundation/filter, deployment-audit, and 42-case desktop/mobile Playwright suites together.
+
+### Deliberate boundary
+
+- The endpoint is production-ready but no wizard control invokes it yet. The accessible, reversible modal, applied-filter pill, cancellation/stale-result behavior, and new visual baselines are isolated to Milestone 13.
+- Ordinary verification never uses an external model or key. A real provider smoke remains an explicit opt-in release task after privacy and quota configuration in Milestone 14.

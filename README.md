@@ -241,8 +241,16 @@ Authenticated wizard endpoints are owner-only and CSRF-protected on mutation:
 - `GET /api/insights/{public-id}/wizard` returns saved state and reference options;
 - `PUT /api/insights/{public-id}/scope` saves and validates the parliamentary scope;
 - `GET|PUT /api/insights/{public-id}/members` reads or replaces the date-valid cohort;
-- `POST /api/insights/{public-id}/votes` searches and calculates cohort results; and
+- `POST /api/insights/{public-id}/votes` searches and calculates cohort results;
+- `POST /api/insights/{public-id}/ai-filter` performs owner-only, CSRF-protected hybrid retrieval and structured semantic preselection for the current validated cohort; and
 - `PUT /api/insights/{public-id}/evidence` safely reorders or replaces selected votes.
+
+The AI endpoint first produces a bounded structured search plan, retrieves exact/full-text candidates inside the insight's immutable publication/scope in MariaDB, and evaluates only that compact pool in bounded chunks. It returns separate matching and ambiguous IDs with reasons and preview metadata. It never selects evidence or changes the insight. Repeated identical owner/insight/publication/prompt/model/criterion/cohort requests reuse a time-limited cache; uncached requests are subject to a per-user hourly limit. Deterministic integration and HTTP tests exercise this flow without external requests:
+
+```powershell
+npm.cmd run test:ai-filter-db
+npx.cmd playwright test tests/playwright/ai-filter-api.spec.js
+```
 
 The browser test fixture includes a clearly synthetic, test-only Swiss publication designed to exercise deterministic cohort changes and outliers. Production reference data continues to come exclusively from the publication pipeline.
 

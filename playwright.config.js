@@ -46,6 +46,11 @@ module.exports = defineConfig({
       POLITIKS_TEST_AUTH: 'enabled',
       POLITIKS_TEST_AUTH_BOOTSTRAP: path.resolve(__dirname, 'tests/support/TestGoogleTokenVerifier.php'),
       GOOGLE_CLIENT_ID: 'playwright-client.apps.googleusercontent.com',
+      AI_FILTER_ENABLED: '1',
+      OPENAI_API_KEY: 'playwright-test-only-openai-key',
+      OPENAI_MODEL: 'playwright-deterministic-model',
+      POLITIKS_TEST_AI: 'enabled',
+      POLITIKS_TEST_AI_BOOTSTRAP: path.resolve(__dirname, 'tests/support/TestAiResponsesClient.php'),
     },
   },
 });

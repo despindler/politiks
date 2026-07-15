@@ -15,6 +15,11 @@ use Politiks\App\Security\NativeSession;
 use Politiks\App\Insight\InsightStore;
 use Politiks\App\Insight\WizardStore;
 use Politiks\App\Insight\CampaignContextStore;
+use Politiks\App\Ai\AiPromptStore;
+use Politiks\App\Ai\AiResponsesClientFactory;
+use Politiks\App\Ai\AiVoteFilterService;
+use Politiks\App\Ai\AiVoteFilterStore;
+use Politiks\App\Ai\TestAiResponsesClient;
 
 final class ApplicationFactory
 {
@@ -42,6 +47,10 @@ final class ApplicationFactory
             $config->storagePath,
             $config->uploadMaxBytes,
         );
+        $testAiEnabled = $config->environment === 'test' && getenv('POLITIKS_TEST_AI') === 'enabled';
+        $aiClient = $config->aiFilter['enabled']
+            ? ($testAiEnabled ? new TestAiResponsesClient() : AiResponsesClientFactory::create($config->aiFilter))
+            : null;
         return new Application(
             $config,
             new AuthService($verifier, $users, $session),
@@ -49,6 +58,13 @@ final class ApplicationFactory
             new InsightStore($database->connection(...), $config->appUrl),
             new WizardStore($database->connection(...)),
             $campaignContexts,
+            new AiVoteFilterService(
+                new AiVoteFilterStore($database->connection(...)),
+                new AiPromptStore($database->connection(...)),
+                $aiClient,
+                $config->aiFilter,
+                $config->appSecret,
+            ),
         );
     }
 }

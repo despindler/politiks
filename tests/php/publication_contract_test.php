@@ -81,6 +81,7 @@ return [
             'CREATE TABLE IF NOT EXISTS ai_filter_cache',
             'CREATE TABLE IF NOT EXISTS ai_filter_run',
             "'vote_filter_selection'",
+            "'vote_filter_query_plan'",
             'FULLTEXT KEY',
         ] as $requiredSql) {
             assertTrue(str_contains($schema, $requiredSql), sprintf('Schema lacks %s.', $requiredSql));
@@ -95,7 +96,7 @@ return [
         assertTrue($sql !== false, 'MariaDB schema must be readable.');
         $statements = SqlScript::statements($sql);
         assertTrue(is_array($statements), 'SQL script parser must return statements.');
-        assertSameValue(44, count($statements), 'The complete schema statement count should remain explicit.');
+        assertSameValue(45, count($statements), 'The complete schema statement count should remain explicit.');
         foreach ($statements as $statement) {
             assertTrue(trim($statement) !== '', 'Schema must not contain empty executable statements.');
         }

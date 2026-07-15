@@ -11,6 +11,8 @@ use Politiks\App\Insight\InsightStore;
 use Politiks\App\Insight\WizardStore;
 use Politiks\App\Insight\CampaignContextStore;
 use Politiks\App\Security\Csrf;
+use Politiks\App\Ai\AiFilterException;
+use Politiks\App\Ai\AiVoteFilterService;
 use Throwable;
 
 final class Application
@@ -22,6 +24,7 @@ final class Application
         private readonly InsightStore $insights,
         private readonly WizardStore $wizard,
         private readonly CampaignContextStore $campaignContexts,
+        private readonly AiVoteFilterService $aiVoteFilter,
     ) {
     }
 
@@ -149,6 +152,17 @@ final class Application
                     $user['id'], $matches[1], $body['member_ids'] ?? null, $body['query'] ?? ''
                 ));
             }
+            if ($method === 'POST' && preg_match('~^/api/insights/([a-f0-9]{26})/ai-filter$~', $path, $matches) === 1) {
+                $this->requireCsrf();
+                $user = $this->requireUser();
+                $body = Http::jsonBody();
+                Http::json(['ok' => true, 'filter' => $this->aiVoteFilter->filter(
+                    $user['id'],
+                    $matches[1],
+                    $body['criterion'] ?? null,
+                    $body['member_ids'] ?? null,
+                )]);
+            }
             if ($method === 'GET' && preg_match('~^/api/insights/([a-f0-9]{26})/contexts$~', $path, $matches) === 1) {
                 $user = $this->requireUser();
                 Http::json(['ok' => true, 'items' => $this->campaignContexts->ownerContexts($user['id'], $matches[1])]);
@@ -232,6 +246,8 @@ final class Application
         } catch (GoogleAuthException $error) {
             $this->error($error->status, $error->errorCode, $error->getMessage());
         } catch (InsightException $error) {
+            $this->error($error->status, $error->errorCode, $error->getMessage());
+        } catch (AiFilterException $error) {
             $this->error($error->status, $error->errorCode, $error->getMessage());
         } catch (HttpFailure $error) {
             $this->error($error->status, $error->errorCode, $error->getMessage());

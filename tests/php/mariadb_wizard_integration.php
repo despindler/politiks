@@ -17,7 +17,7 @@ $email = 'wizard.integration@example.test';
 
 try {
     $pdo = MariaDb::connect(Environment::load(dirname(__DIR__, 2) . '/.env.test'));
-    ensureWizardReferenceFixture($pdo);
+    $fixturePublicationId = ensureWizardReferenceFixture($pdo);
     $old = $pdo->prepare('SELECT id FROM app_user WHERE email=?');
     $old->execute([$email]);
     $oldId = $old->fetchColumn();
@@ -32,7 +32,7 @@ try {
     $insertUser->execute([$email]);
     $ownerId = (int) $pdo->lastInsertId();
 
-    $candidate = $pdo->query(
+    $candidateStatement = $pdo->prepare(
         "SELECT event.publication_id, country.source_id country_id, legislature.source_id legislature_id,
                 event.chamber_source_id chamber_id, party_membership.party_source_id party_id,
                 choice.person_source_id person_id, event.source_id event_id,
@@ -55,9 +55,11 @@ try {
            AND legislature.source_id=chamber.legislature_source_id
          JOIN ref_country country ON country.publication_id=legislature.publication_id
            AND country.source_id=legislature.country_source_id
-         WHERE choice.normalized_choice IN ('yes','no','abstain','other')
+         WHERE event.publication_id=? AND choice.normalized_choice IN ('yes','no','abstain','other')
          ORDER BY event.occurred_at DESC LIMIT 1"
-    )->fetch();
+    );
+    $candidateStatement->execute([$fixturePublicationId]);
+    $candidate = $candidateStatement->fetch();
     if ($candidate === false) {
         $counts = $pdo->query(
             'SELECT

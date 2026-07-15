@@ -246,6 +246,16 @@ Mark a member who voted against the current cohort majority with a neutral `Abwe
 
 Keep an always-visible or easily opened evidence tray showing the number of selected voting events. It must let the user review, reorder, or remove evidence without losing the current search state.
 
+### 9.4 Optional AI-assisted vote filter
+
+Step 3 also offers an optional `Mit KI eingrenzen` discovery mechanism in a modal. It is an experimental, reversible filter over the current authoritative result scope—not an official topic, reviewed classification, evidence selection, or factual claim. Closing or discarding the modal changes nothing; applying its result creates only a removable filter and never selects evidence automatically.
+
+The user writes a bounded German selection criterion. Keep that criterion as untrusted user data and never interpolate it into the trusted database-versioned developer prompt. The server first requests a strict structured query plan, then performs exact/full-text MariaDB retrieval within the owner-controlled insight publication, chamber, period, and validated current member cohort. Only the bounded candidate pool is sent for strict structured semantic selection in bounded chunks. Candidate data may include immutable identifiers, date/type, title, exact question, explicit Yes/No meanings, official metadata, reviewed classifications, and the server-calculated cohort direction/counts. Never infer missing Yes/No semantics.
+
+Return matches and plausible-but-ambiguous records separately with short reasons. Every returned ID must belong to the supplied candidate chunk. Results remain private discovery state and do not mutate the insight. Cache reuse must be bound to owner, insight, immutable publication, both prompt versions, configured model, normalized criterion, candidate content, and selected cohort. Enforce per-user rate limits and bounded time/output/candidate/chunk settings.
+
+The feature is disabled by default and must make no provider call until explicitly enabled with a server-side key. Use the OpenAI Responses API with strict Structured Outputs, separate trusted developer instructions from JSON-encoded user data, set `store: false`, use a pseudonymous safety identifier, and expose no API key to HTML, JavaScript, logs, API responses, or database records. Operational logs retain request ID, hashes, prompt/model version, status, counts, tokens, and latency—not raw criteria, candidate text, identity data, uploads, or campaign context. The modal must clearly disclose that the criterion and the listed public parliamentary fields are processed by the configured AI provider.
+
 ## 10. Campaign-context media
 
 Campaign statements and media are user-supplied context. They are not official parliamentary evidence. Label them accordingly.

@@ -7,11 +7,61 @@ require_once __DIR__ . '/../support/DeterministicAiResponsesClient.php';
 
 use Politiks\App\Ai\AiFilterException;
 use Politiks\App\Ai\AiResponsesClientFactory;
+use Politiks\App\Ai\AiQueryPlanContract;
 use Politiks\App\Ai\AiSelectionContract;
 use Politiks\App\Ai\OpenAiResponsesClient;
 use Politiks\TestSupport\DeterministicAiResponsesClient;
 
 return [
+    'German AI selection evaluation fixture preserves required risk cases' => static function (): void {
+        $path = __DIR__ . '/../fixtures/ai_vote_filter_eval_v1.json';
+        $fixture = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        assertSameValue(1, $fixture['version'], 'The evaluation fixture should be explicitly versioned.');
+        assertSameValue('de', $fixture['language'], 'The MVP evaluation language should be German.');
+        $ids = array_column($fixture['cases'], 'id');
+        foreach ([
+            'clear_match',
+            'explicit_exclusion',
+            'negated_topic',
+            'unrelated_empty',
+            'missing_vote_semantics',
+            'plausible_ambiguity',
+            'prompt_injection_is_data',
+        ] as $requiredCase) {
+            assertTrue(in_array($requiredCase, $ids, true), 'Evaluation fixture lacks ' . $requiredCase . '.');
+        }
+        foreach ($fixture['cases'] as $case) {
+            assertTrue(strlen((string) $case['criterion']) >= 3, 'Every evaluation case needs a criterion.');
+            foreach (['required_ids', 'ambiguous_ids', 'forbidden_ids'] as $group) {
+                assertTrue(is_array($case[$group]) && array_is_list($case[$group]), 'Every expected ID group must be a list.');
+            }
+        }
+    },
+    'AI query plan contract normalizes bounded retrieval hints' => static function (): void {
+        $plan = AiQueryPlanContract::normalize([
+            'search_terms' => [' Klima ', 'Energie', 'Klima'],
+            'exclude_terms' => ['Atomkraft'],
+            'date_from' => '2024-01-01',
+            'date_to' => null,
+            'vote_types' => ['final_vote', 'final_vote'],
+        ]);
+        assertSameValue(['Klima', 'Energie'], $plan['search_terms'], 'Search terms should be trimmed and deduplicated.');
+        assertSameValue(['final_vote'], $plan['vote_types'], 'Vote types should be deduplicated.');
+
+        foreach ([
+            ['search_terms' => [], 'exclude_terms' => [], 'date_from' => null, 'date_to' => null, 'vote_types' => []],
+            ['search_terms' => ['Klima'], 'exclude_terms' => [], 'date_from' => '2025-02-30', 'date_to' => null, 'vote_types' => []],
+            ['search_terms' => ['Klima'], 'exclude_terms' => [], 'date_from' => '2025-02-01', 'date_to' => '2025-01-01', 'vote_types' => []],
+            ['search_terms' => ['Klima'], 'exclude_terms' => [], 'date_from' => null, 'date_to' => null, 'vote_types' => ['invented']],
+        ] as $invalid) {
+            try {
+                AiQueryPlanContract::normalize($invalid);
+                throw new TestFailure('Invalid query plans should be rejected.');
+            } catch (AiFilterException $error) {
+                assertSameValue('AI_RESPONSE_INVALID', $error->errorCode, 'Invalid query plans need a stable error.');
+            }
+        }
+    },
     'AI selection contract accepts only known candidate IDs' => static function (): void {
         $normalized = AiSelectionContract::normalize([
             'matches' => [
