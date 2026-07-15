@@ -9,7 +9,10 @@ use RuntimeException;
 
 final class Config
 {
-    /** @param array<string, string> $database */
+    /**
+     * @param array<string, string> $database
+     * @param array{enabled:bool,api_key:?string,responses_url:string,model:string,timeout_seconds:int,max_output_tokens:int,candidate_limit:int,chunk_size:int,cache_ttl_seconds:int,hourly_limit:int} $aiFilter
+     */
     private function __construct(
         public readonly string $environment,
         public readonly string $appUrl,
@@ -22,6 +25,7 @@ final class Config
         public readonly string $storagePath,
         public readonly int $uploadMaxBytes,
         public readonly bool $testAuthEnabled,
+        public readonly array $aiFilter,
     ) {
     }
 
@@ -88,6 +92,61 @@ final class Config
         if (!ctype_digit($uploadMaxBytes) || (int) $uploadMaxBytes < 1024 || (int) $uploadMaxBytes > 20_971_520) {
             throw new RuntimeException('UPLOAD_MAX_BYTES muss zwischen 1024 und 20971520 liegen.');
         }
+
+        $aiEnabledValue = Environment::value($values, 'AI_FILTER_ENABLED', '0') ?? '0';
+        if (!in_array($aiEnabledValue, ['0', '1'], true)) {
+            throw new RuntimeException('AI_FILTER_ENABLED muss 0 oder 1 sein.');
+        }
+        $aiEnabled = $aiEnabledValue === '1';
+        $openAiApiKey = trim(Environment::value($values, 'OPENAI_API_KEY', '') ?? '');
+        if ($openAiApiKey !== '' && (strlen($openAiApiKey) < 20 || strlen($openAiApiKey) > 512)) {
+            throw new RuntimeException('OPENAI_API_KEY ist ungÃ¼ltig.');
+        }
+        if ($aiEnabled && $openAiApiKey === '') {
+            throw new RuntimeException('OPENAI_API_KEY fehlt fÃ¼r den aktivierten KI-Filter.');
+        }
+        $responsesUrl = Environment::value(
+            $values,
+            'OPENAI_RESPONSES_URL',
+            'https://api.openai.com/v1/responses',
+        ) ?? '';
+        $responsesParts = parse_url($responsesUrl);
+        if (filter_var($responsesUrl, FILTER_VALIDATE_URL) === false || !is_array($responsesParts)
+            || strtolower((string) ($responsesParts['scheme'] ?? '')) !== 'https'
+            || isset($responsesParts['user']) || isset($responsesParts['pass'])
+            || isset($responsesParts['query']) || isset($responsesParts['fragment'])) {
+            throw new RuntimeException('OPENAI_RESPONSES_URL muss eine HTTPS-URL ohne Zugangsdaten oder Parameter sein.');
+        }
+        $openAiModel = Environment::value($values, 'OPENAI_MODEL', 'gpt-5.6-luna') ?? '';
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/', $openAiModel) !== 1) {
+            throw new RuntimeException('OPENAI_MODEL ist ungÃ¼ltig.');
+        }
+        $boundedInteger = static function (
+            string $key,
+            int $default,
+            int $minimum,
+            int $maximum,
+        ) use ($values): int {
+            $value = Environment::value($values, $key, (string) $default) ?? '';
+            if (!ctype_digit($value) || (int) $value < $minimum || (int) $value > $maximum) {
+                throw new RuntimeException(sprintf(
+                    '%s muss zwischen %d und %d liegen.',
+                    $key,
+                    $minimum,
+                    $maximum,
+                ));
+            }
+            return (int) $value;
+        };
+        $aiTimeoutSeconds = $boundedInteger('AI_FILTER_TIMEOUT_SECONDS', 30, 5, 120);
+        $aiMaxOutputTokens = $boundedInteger('AI_FILTER_MAX_OUTPUT_TOKENS', 4096, 256, 16_384);
+        $aiCandidateLimit = $boundedInteger('AI_FILTER_CANDIDATE_LIMIT', 300, 25, 500);
+        $aiChunkSize = $boundedInteger('AI_FILTER_CHUNK_SIZE', 75, 10, 100);
+        if ($aiChunkSize > $aiCandidateLimit) {
+            throw new RuntimeException('AI_FILTER_CHUNK_SIZE darf das Kandidatenlimit nicht Ã¼berschreiten.');
+        }
+        $aiCacheTtlSeconds = $boundedInteger('AI_FILTER_CACHE_TTL_SECONDS', 3600, 60, 86_400);
+        $aiHourlyLimit = $boundedInteger('AI_FILTER_HOURLY_LIMIT', 10, 1, 100);
         if ($environment === 'production') {
             if (strtolower((string) $appUrlParts['scheme']) !== 'https') {
                 throw new RuntimeException('APP_URL muss in der Produktion HTTPS verwenden.');
@@ -120,6 +179,18 @@ final class Config
             $siteRoot . '/storage',
             (int) $uploadMaxBytes,
             $environment === 'test' && $testFlag,
+            [
+                'enabled' => $aiEnabled,
+                'api_key' => $openAiApiKey === '' ? null : $openAiApiKey,
+                'responses_url' => $responsesUrl,
+                'model' => $openAiModel,
+                'timeout_seconds' => $aiTimeoutSeconds,
+                'max_output_tokens' => $aiMaxOutputTokens,
+                'candidate_limit' => $aiCandidateLimit,
+                'chunk_size' => $aiChunkSize,
+                'cache_ttl_seconds' => $aiCacheTtlSeconds,
+                'hourly_limit' => $aiHourlyLimit,
+            ],
         );
     }
 

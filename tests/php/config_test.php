@@ -34,9 +34,29 @@ function withTemporaryConfig(string $contents, callable $callback): void
     if ($path === false || file_put_contents($path, $contents) === false) {
         throw new TestFailure('Temporary configuration could not be created.');
     }
+    $isolatedKeys = [
+        'AI_FILTER_ENABLED',
+        'OPENAI_API_KEY',
+        'OPENAI_RESPONSES_URL',
+        'OPENAI_MODEL',
+        'AI_FILTER_TIMEOUT_SECONDS',
+        'AI_FILTER_MAX_OUTPUT_TOKENS',
+        'AI_FILTER_CANDIDATE_LIMIT',
+        'AI_FILTER_CHUNK_SIZE',
+        'AI_FILTER_CACHE_TTL_SECONDS',
+        'AI_FILTER_HOURLY_LIMIT',
+    ];
+    $previousValues = [];
+    foreach ($isolatedKeys as $key) {
+        $previousValues[$key] = getenv($key);
+        putenv($key);
+    }
     try {
         $callback($path);
     } finally {
+        foreach ($previousValues as $key => $value) {
+            $value === false ? putenv($key) : putenv($key . '=' . $value);
+        }
         @unlink($path);
     }
 }
@@ -71,6 +91,65 @@ return [
             });
         } finally {
             $previous === false ? putenv('POLITIKS_TEST_AUTH') : putenv('POLITIKS_TEST_AUTH=' . $previous);
+        }
+    },
+    'AI filter remains off by default and requires a key when enabled' => static function (): void {
+        withTemporaryConfig(productionConfigText(), static function (string $path): void {
+            $config = Config::load($path);
+            assertSameValue(false, $config->aiFilter['enabled'], 'AI filtering must be opt-in.');
+            assertSameValue(null, $config->aiFilter['api_key'], 'A disabled filter must not require a key.');
+            assertSameValue('gpt-5.6-luna', $config->aiFilter['model'], 'The documented model default should load.');
+        });
+
+        withTemporaryConfig(
+            productionConfigText() . "AI_FILTER_ENABLED=1\n",
+            static function (string $path): void {
+                try {
+                    Config::load($path);
+                    throw new TestFailure('An enabled AI filter without a key should be rejected.');
+                } catch (RuntimeException $error) {
+                    assertTrue(str_contains($error->getMessage(), 'OPENAI_API_KEY'), 'The missing-key error should be explicit.');
+                }
+            },
+        );
+    },
+    'AI filter configuration accepts bounded explicit settings' => static function (): void {
+        $aiSettings = implode("\n", [
+            'AI_FILTER_ENABLED=1',
+            'OPENAI_API_KEY=test-only-openai-key-0123456789',
+            'OPENAI_RESPONSES_URL=https://api.openai.com/v1/responses',
+            'OPENAI_MODEL=gpt-test-model',
+            'AI_FILTER_TIMEOUT_SECONDS=45',
+            'AI_FILTER_MAX_OUTPUT_TOKENS=2048',
+            'AI_FILTER_CANDIDATE_LIMIT=250',
+            'AI_FILTER_CHUNK_SIZE=50',
+            'AI_FILTER_CACHE_TTL_SECONDS=1800',
+            'AI_FILTER_HOURLY_LIMIT=7',
+            '',
+        ]);
+        withTemporaryConfig(productionConfigText() . $aiSettings, static function (string $path): void {
+            $config = Config::load($path);
+            assertSameValue(true, $config->aiFilter['enabled'], 'AI filtering should be enabled.');
+            assertSameValue('gpt-test-model', $config->aiFilter['model'], 'The configured model should load.');
+            assertSameValue(50, $config->aiFilter['chunk_size'], 'The configured chunk size should load.');
+            assertSameValue(7, $config->aiFilter['hourly_limit'], 'The configured rate limit should load.');
+        });
+    },
+    'AI filter configuration rejects unsafe endpoints and invalid bounds' => static function (): void {
+        foreach ([
+            "OPENAI_RESPONSES_URL=http://api.openai.com/v1/responses\n",
+            "AI_FILTER_CANDIDATE_LIMIT=24\n",
+            "AI_FILTER_CANDIDATE_LIMIT=25\nAI_FILTER_CHUNK_SIZE=26\n",
+        ] as $invalidSettings) {
+            withTemporaryConfig(productionConfigText() . $invalidSettings, static function (string $path): void {
+                $rejected = false;
+                try {
+                    Config::load($path);
+                } catch (RuntimeException) {
+                    $rejected = true;
+                }
+                assertTrue($rejected, 'Unsafe AI settings must be rejected.');
+            });
         }
     },
 ];

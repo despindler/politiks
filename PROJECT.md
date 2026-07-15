@@ -17,6 +17,7 @@ This file records durable milestone status, verification, decisions, and known l
 | 8. Insight wizard and parliamentary evidence search | Complete | 2026-07-14 |
 | 9. Campaign-context attachments | Complete | 2026-07-14 |
 | 10. End-to-end hardening and MVP release | Complete | 2026-07-14 |
+| 11. AI filter foundation and safe OpenAI boundary | Complete | 2026-07-15 |
 
 ## Working decisions
 
@@ -439,3 +440,29 @@ Make slow member retrieval, cohort vote calculation, context persistence, and fi
 - Pure PHP suite: 26 passed, 0 failed. The deployment audit passed with 48 tracked runtime files and 27 deployed PHP files linted.
 - The activity strip and member skeletons were rendered with the pinned Chromium build and visually inspected at desktop/mobile sizes in light/dark modes; the fixed status surface remained readable and within the viewport. A standalone Chromium check also exercised the real wizard script against delayed member and vote endpoints and verified one request per action, disabled controls, `aria-busy`, progress visibility, and completion cleanup.
 - Full database-backed browser verification requires the ignored local `.env.test`, which is not present in this checkout; production configuration was not used or changed.
+
+## Milestone 11 — AI filter foundation and safe OpenAI boundary
+
+### Goal
+
+Prepare a disabled-by-default, testable, privacy-conscious boundary for optional AI-assisted vote filtering before adding retrieval logic or user interface behavior.
+
+### Work completed
+
+- Added versioned `ai_prompt_template` storage with one seeded German selection prompt. It treats criteria and candidate fields as untrusted data, restricts output to supplied IDs, keeps ambiguity separate, and forbids invented facts or inferred Yes/No semantics.
+- Added `ai_filter_run` and `ai_filter_cache`. Run records retain operational hashes, counts, status, model, tokens, and latency rather than raw criteria or candidate text; caches are bound to the owner, insight, immutable publication, prompt, model, criterion, candidates, cohort, and expiry.
+- Added bounded placeholder-only environment settings. The feature is opt-in, requires a server-side key only when enabled, and defaults to no external AI behavior.
+- Added a provider interface, production Responses API client, feature-gated factory, active-prompt store, strict matched/ambiguous result contract, and deterministic test provider outside `site/`.
+- Requests keep trusted developer instructions separate from JSON-encoded user data, request strict JSON-schema output, disable provider-side response storage with `store: false`, and carry a pseudonymous safety identifier. Provider errors are mapped to stable German application errors without including provider bodies or secrets.
+- Extended the guarded database reset and project verification commands for the three new application-owned tables and the local AI foundation integration test.
+
+### Verification
+
+- `php tests/php/run.php`: 35 passed, including request construction, instruction/data separation, strict schema, refusal/rate-error mapping, unknown-ID rejection, duplicate normalization, size/format bounds, deterministic provider behavior, disabled-state behavior, and isolated configuration validation.
+- `site/database/schema.sql` applied twice to `.env.test`: 44 statements each time and 37 total tables, confirming idempotency.
+- `php tests/php/mariadb_ai_foundation_integration.php --env=.env.test`: active prompt version/schema, run accounting, and JSON cache round-trip passed in a rolled-back test transaction; external AI requests: 0.
+- `npm.cmd run test:deploy`: deployment audit passed with the new runtime classes, no test credentials, and no development artifacts in `site/`.
+
+### Deliberate boundary
+
+- This milestone does not expose an HTTP route or UI and cannot spend model quota by itself. Hybrid retrieval, endpoint orchestration, rate enforcement, cache use, and deterministic evaluation belong to Milestone 12; the reversible modal and Playwright visual coverage belong to Milestone 13.

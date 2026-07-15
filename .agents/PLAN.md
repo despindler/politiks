@@ -299,6 +299,101 @@ Validate the complete system against real representative data and produce a depl
 - The deployed `site/` contains every required runtime file and `site/index.php`, while secrets, test credentials, source snapshots, SQLite files, and development tooling are absent.
 - A smoke deployment to the target Apache/PHP/MariaDB environment succeeds, or every host-specific incompatibility is documented with a tested resolution.
 
+## Milestone 11 — AI filter foundation and safe OpenAI boundary
+
+### Goal
+
+Add a disabled-by-default, testable OpenAI integration boundary with versioned database prompts, strict structured responses, bounded configuration, and no dependency on live API calls during ordinary development or CI.
+
+### Outputs
+
+- Idempotent MariaDB tables for immutable/versioned AI prompt templates and privacy-preserving filter-run/cache metadata. Raw criteria and candidate text are not retained in operational logs.
+- One seeded active German prompt template that treats user criteria and parliamentary fields as untrusted data, permits only candidate IDs, requires an empty result for no match, and forbids inventing facts or Yes/No semantics.
+- Placeholder-only `.env.example` and `site/.env.example` settings for an explicit feature flag, server-side OpenAI API key, Responses endpoint, configurable model, timeouts, candidate/chunk limits, cache lifetime, and per-user rate limits.
+- A small provider interface plus production Responses API client and deterministic test client. The API key never reaches HTML, JavaScript, logs, database rows, or API responses.
+- Strict Structured Outputs schema for matched and ambiguous candidate IDs with short German reasons; refusals, incomplete responses, timeouts, malformed bodies, unknown IDs, duplicates, and oversized selections have stable application errors.
+- Requests use separate developer/system and user-data messages, `store: false`, a privacy-preserving stable safety identifier, and no tools or outbound destinations beyond the configured Responses endpoint.
+
+### Verification
+
+- Pure PHP tests cover request construction, instruction/data separation, schema parsing, refusals, malformed responses, unknown-ID rejection, duplicate normalization, bounds, and secret redaction.
+- Applying `site/database/schema.sql` twice remains idempotent and seeds exactly one active prompt version for the filter purpose.
+- Local `.env.test` MariaDB smoke checks the new tables, active-template lookup, cache metadata, and guarded rate-limit accounting without making a paid API request.
+- With the feature disabled or the key absent, the application makes no external call and returns a stable unavailable state.
+
+## Milestone 12 — Hybrid retrieval, semantic selection, and audited API
+
+### Goal
+
+Turn a user's German selection criterion into a scalable, transparent filter across the current insight scope without sending the complete parliamentary database to the model.
+
+### Outputs
+
+- Owner-only, CSRF-protected Step 3 API accepting bounded criteria and the current selected-member cohort; the server derives authoritative scope and candidates rather than trusting client-supplied voting records.
+- First structured model stage producing bounded German search terms, synonyms, exclusions, optional date constraints, and vote-type hints.
+- MariaDB full-text/exact retrieval over the immutable active insight publication, chamber, period, and selected-member participation, producing a deterministic bounded candidate pool.
+- Second structured model stage evaluating compact candidates in bounded chunks and returning matched/ambiguous IDs with reasons; server-side merging, validation, deduplication, and deterministic ordering.
+- Candidate objects include only the immutable vote ID, affair/vote identifiers, date/type, title, exact question, explicit Yes/No meanings, and relevant official metadata. The prompt may not infer missing semantics.
+- Per-user rate limiting, request timeout, candidate/result caps, criteria/candidate/prompt hashes, token/latency/status metadata, and cache reuse without storing raw criteria.
+- AI results remain a private discovery result and never create evidence, classifications, claims, or public catalogue content.
+
+### Verification
+
+- MariaDB integration tests use the deterministic provider to verify scope/ownership, CSRF, cohort participation, full-text retrieval, exact identifiers, chunk merging, unknown-ID rejection, cache reuse, rate limits, and rollback/failure behavior.
+- A representative German evaluation fixture covers clear matches, exclusions, negation, unrelated criteria, missing Yes/No semantics, ambiguous records, and prompt-injection-like user/candidate text.
+- Local `.env.test` smoke tests the complete endpoint and full reference schema without external API charges.
+- Repeated identical requests reuse the cache; changing publication, prompt version, model, criteria, cohort, or candidate content invalidates it.
+
+## Milestone 13 — Optional Step 3 AI-selection modal
+
+### Goal
+
+Expose AI-assisted discovery as an optional, reversible selection mechanism that is clearly separate from official facts, reviewed classifications, deterministic filters, and the user's evidence choices.
+
+### Required guidance
+
+Read `.agents/skills/STEPPER.md` completely before implementation.
+
+### Outputs
+
+- A full-width `Mit KI eingrenzen` action in Step 3 opening an accessible Bootstrap modal.
+- German explanatory copy labeling the feature as an experimental AI preselection rather than an official or reviewed classification.
+- Criteria textarea, examples, current scope/cohort/candidate summary, explicit start button, progress/long-wait/cancellation feedback, and clear provider-processing disclosure.
+- Preview groups for matching and ambiguous votes with short reasons, checkboxes, counts, and links/actions that inspect the existing vote details.
+- `Als Filter anwenden`, `Verwerfen`, and close behavior. Closing or discarding changes nothing; applying creates only a removable Step 3 filter pill and never selects evidence automatically.
+- Reopening preserves the current private modal result during the page session; changing scope/cohort or relevant search inputs clearly invalidates stale AI results.
+- Empty, refusal, timeout, disabled, rate-limited, and provider-error states remain actionable and do not disturb deterministic filters or selected evidence.
+
+### Verification
+
+- Playwright holds deterministic AI requests open and verifies one request per action, disabled duplicate submission, progress, cancellation/close behavior, focus management, `aria-busy`, and cleanup.
+- Playwright verifies apply/clear behavior, ambiguous-result handling, stale-result invalidation, cohort synchronization, retained evidence, and that AI results never auto-select evidence.
+- Reviewed visual baselines cover populated, empty, and error modal states plus the applied filter pill on desktop/mobile in light/dark modes.
+- Keyboard-only use, reduced motion, modal scrolling, long German criteria/reasons, and narrow viewports have no trapped focus, clipped actions, overlap, or horizontal overflow.
+
+## Milestone 14 — AI-filter evaluation, privacy, deployment, and release acceptance
+
+### Goal
+
+Prove the complete feature against representative local data, document its cost/privacy/quality boundaries, and make production activation an explicit operational choice.
+
+### Outputs
+
+- Versioned German selection evaluation with expected required, forbidden, ambiguous, and empty outcomes across representative parliamentary records.
+- Deployment documentation for creating an OpenAI API key, selecting/configuring the model, enabling the feature, setting quotas/timeouts, rotating the key, disabling the feature instantly, and checking safe operational metrics.
+- Privacy copy stating which user criterion and public parliamentary fields are sent to OpenAI, that identities/uploads/unrelated insight content are excluded, and that the API's current data controls still apply.
+- Production-safe logs containing request IDs, hashes, status, latency, token counts, model, and prompt version without API keys, raw criteria, candidate text, Google identity, or campaign material.
+- Deployment audit rules excluding deterministic test providers/credentials and requiring placeholder-only AI configuration in the deployable tree.
+- `PROJECT.md`, README, deployment checklist, and rollback notes updated with exact verification and known semantic/cost limitations.
+
+### Verification
+
+- `npm.cmd run verify:clean` passes from a reset `.env.test` MariaDB database with deterministic AI behavior and no paid API call.
+- PHP/API/Playwright suites pass together, including existing catalogue, authentication, wizard, campaign-context, deployment, and split-dump behavior.
+- Reviewed desktop/mobile light/dark visual baselines show the modal and applied filter without regressions elsewhere in Step 3.
+- An optional explicitly enabled live-provider smoke test succeeds with a user-supplied development API key; it is skipped rather than silently using production credentials when no key is configured.
+- Production remains disabled until the host has a private API key, explicit enable flag, accepted quota/model settings, updated privacy notice, and a successful target-host smoke test.
+
 ## Cross-cutting acceptance rules
 
 These apply to every milestone:

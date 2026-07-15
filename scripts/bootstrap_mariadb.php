@@ -55,11 +55,14 @@ try {
             throw new RuntimeException('--reset is allowed only with an environment file named .env.test.');
         }
         $tables = [
+            'ai_filter_run',
+            'ai_filter_cache',
             'insight_campaign_context',
             'insight_vote_evidence',
             'insight_member',
             'insight',
             'app_user',
+            'ai_prompt_template',
             'ref_vote_search_document',
             'ref_reviewed_classification',
             'ref_taxonomy_term',

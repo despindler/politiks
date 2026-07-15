@@ -198,6 +198,12 @@ Production uses `site/.env`. Start from `.env.example`, set `APP_ENV=production`
 php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
 ```
 
+The optional Step 3 AI filter is disabled by default (`AI_FILTER_ENABLED=0`). Its server-side Responses API boundary, versioned database prompt, strict output schema, cache, and run accounting can be prepared without an API key. Enable it only after setting `OPENAI_API_KEY` and reviewing the deployment privacy notice; the key must exist only in the uncommitted environment file. Pure PHP tests use a deterministic transport and never contact an external model. The local MariaDB foundation smoke test is:
+
+```powershell
+npm.cmd run test:ai-db
+```
+
 In Google Cloud, create an OAuth 2.0 **Web application** client, add the exact production origin (scheme, host, and port when non-standard) under authorised JavaScript origins, and put its public client ID in `GOOGLE_CLIENT_ID`. No Google client secret is used by this ID-token flow. Keep the official JWKS endpoint as `GOOGLE_JWKS_URL`. Google requires its Identity Services library to be loaded from its hosted URL rather than self-hosted; the application's CSP is scoped accordingly. See the [official Google setup guide](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
 
 Public authentication endpoints:
