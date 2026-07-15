@@ -4,7 +4,7 @@ Everything required at runtime on the Apache/PHP host must live under this direc
 
 Production secrets belong in ignored `site/.env`. The committed Apache rules deny HTTP access to environment files, backend internals, database scripts, logs, and private upload storage.
 
-`database/schema.sql` is a deployment artifact, not an HTTP installer. Apply it only with the repository-level CLI bootstrap command.
+The canonical MariaDB schema lives outside the public document root at `../database/mariadb/schema.sql`. Apply it only with the repository-level CLI bootstrap command; the deployed site contains no database installer or SQL schema.
 
 Runtime structure:
 

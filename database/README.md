@@ -3,3 +3,7 @@
 `schema.sql` is the authoritative country-neutral SQLite research schema. It separates raw provenance, country/legislature reference data, people and dated memberships, affairs and official text, recorded vote facts, derived classification suggestions/review history, and a rebuildable vote-search projection. Swiss endpoint identifiers remain namespaced source mappings rather than becoming universal IDs. Only the `reviewed_classification` view is eligible for later publication; pending suggestions are excluded structurally.
 
 `parliament.sqlite` is generated and stored through Git LFS as a deployment handoff convenience. Recreate it from committed schema, raw source files, and `notebooks/01_import_source_data.ipynb`; never treat the binary database as the source of truth. The notebook uses the small fixture by default and accepts `POLITIKS_SOURCE_MANIFEST=source/manifests/full_swiss_2026-07-14.jsonl` for the full offline build. `IMPORT_REPORT.md` documents the supported shapes, row counts, mapping rules, and known limitations. Run `git lfs pull` after cloning before using the checked-in artifact.
+
+## Application MariaDB database
+
+The complete MariaDB application schema, its contract documentation, and standalone migrations live under `database/mariadb/`. They remain deliberately separate from the SQLite research schema while keeping all database artifacts outside the public `site/` document root.

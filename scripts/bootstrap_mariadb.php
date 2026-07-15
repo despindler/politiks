@@ -103,7 +103,7 @@ try {
         }
     }
 
-    $statements = SqlScript::execute($connection, $root . '/site/database/schema.sql');
+    $statements = SqlScript::execute($connection, $root . '/database/mariadb/schema.sql');
     $tableCount = (int) $connection->query(
         "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()"
     )->fetchColumn();

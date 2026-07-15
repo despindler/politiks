@@ -155,7 +155,7 @@ final class AiVoteFilterService
                     $selectionPrompt['system_text'],
                     ['criterion' => $criterion, 'candidates' => $chunk],
                     $selectionPrompt['output_schema_version'],
-                    AiSelectionContract::schema(),
+                    AiSelectionContract::schema(array_column($chunk, 'id')),
                     $safetyIdentifier,
                 );
                 $this->addUsage($usage, $selectionResponse['usage']);

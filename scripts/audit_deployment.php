@@ -38,7 +38,6 @@ try {
         'site/index.php',
         'site/backend/Application.php',
         'site/backend/Config.php',
-        'site/database/schema.sql',
         'site/assets/app.css',
         'site/assets/app.js',
         'site/storage/cache/.gitkeep',
@@ -59,7 +58,7 @@ try {
             $problems[] = sprintf('Erforderliche Datei fehlt: %s', $path);
         }
     }
-    $forbiddenPath = '~(?:^|/)(?:tests?|node_modules|scripts?)(?:/|$)|(?:^|/)(?:router|Test[^/]*)\.php$|\.(?:sqlite3?|db|xlsx?|jsonl|ipynb)$~i';
+    $forbiddenPath = '~(?:^|/)(?:tests?|node_modules|scripts?)(?:/|$)|(?:^|/)(?:router|Test[^/]*)\.php$|\.(?:sql|sqlite3?|db|xlsx?|jsonl|ipynb)$~i';
     foreach ($files as $path) {
         if (preg_match($forbiddenPath, $path) === 1) {
             $problems[] = sprintf('Entwicklungs- oder Quelldatei im Deployment: %s', $path);
@@ -94,12 +93,12 @@ try {
     }
     $example = file_get_contents($root . '/site/.env.example');
     if (!is_string($example)
-        || preg_match('/^AI_FILTER_ENABLED=0$/m', $example) !== 1
-        || preg_match('/^OPENAI_API_KEY=$/m', $example) !== 1
-        || preg_match('/^OPENAI_RESPONSES_URL=https:\/\/(?:[a-z]{2}\.)?api\.openai\.com\/v1\/responses$/m', $example) !== 1) {
+        || preg_match('/^AI_FILTER_ENABLED=0\r?$/m', $example) !== 1
+        || preg_match('/^OPENAI_API_KEY=\r?$/m', $example) !== 1
+        || preg_match('/^OPENAI_RESPONSES_URL=https:\/\/(?:[a-z]{2}\.)?api\.openai\.com\/v1\/responses\r?$/m', $example) !== 1) {
         $problems[] = 'Die deploybare AI-Konfiguration muss deaktivierte, leere und offizielle Platzhalter enthalten.';
     }
-    if (is_string($example) && preg_match('/^OPENAI_API_KEY=.+$/m', $example) === 1) {
+    if (is_string($example) && preg_match('/^OPENAI_API_KEY=[^\r\n]+$/m', $example) === 1) {
         $problems[] = 'OPENAI_API_KEY darf in site/.env.example keinen Wert enthalten.';
     }
     if ($problems !== []) {

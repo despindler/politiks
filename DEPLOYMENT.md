@@ -150,7 +150,7 @@ Vor dem ersten Start ein Backupziel festlegen. Danach das idempotente Schema aus
 php scripts/bootstrap_mariadb.php --env=site/.env
 ```
 
-`--reset` ist für Produktionsdateien technisch gesperrt. Alternativ kann ein Provider-Importwerkzeug `site/database/schema.sql` mit einem DDL-berechtigten Benutzer importieren.
+`--reset` ist für Produktionsdateien technisch gesperrt. Alternativ kann ein Provider-Importwerkzeug `database/mariadb/schema.sql` mit einem DDL-berechtigten Benutzer importieren.
 
 Wenn phpMyAdmin den vollständigen Produktionsdump wegen des Upload-Limits nicht annimmt, stehen unter `database/exports/` fünf jeweils eigenständig eingerahmte `.sql.gz`-Teile bereit. In phpMyAdmin zuerst die leere Zieldatenbank auswählen und danach `part-01-of-05` bis `part-05-of-05` genau einmal in numerischer Reihenfolge importieren. Jeder Teil setzt die für seine separate HTTP-Sitzung erforderlichen Zeichensatz-, Zeitzonen- und Fremdschlüsseloptionen selbst. Die Dateien nicht über eine teilweise importierte Datenbank erneut ausführen: Nach einem Fehler die leere Zieldatenbank beziehungsweise das Backup wiederherstellen und bei Teil 01 neu beginnen. Dateinamen, Prüfsummen und der lokale Verifikationsbefehl stehen in `database/exports/README.md`.
 

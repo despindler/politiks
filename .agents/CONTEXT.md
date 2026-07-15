@@ -285,7 +285,7 @@ Required stack:
 
 Do not introduce a PHP framework or a front-end framework without explicit approval. Keep dependencies small. Vendor pinned Bootstrap and Bootstrap Icons runtime assets under `site/` so the deployment is not unnecessarily dependent on a CDN. Google Identity Services remains an external authentication dependency.
 
-Production credentials and secrets live in `site/.env`, which is never committed. Local automated tests use an ignored repository-root `.env.test`. `.env.example` documents every supported setting with non-secret placeholders. Because `site/` is the public document root, Apache rules must deny HTTP access to `.env`, configuration, database scripts, logs, private upload storage, and other non-public files. Never expose a web-accessible database installer.
+Production credentials and secrets live in `site/.env`, which is never committed. Local automated tests use an ignored repository-root `.env.test`. `.env.example` documents every supported setting with non-secret placeholders. Database schemas, migrations, and installers must remain outside `site/`. Because `site/` is the public document root, Apache rules must still deny HTTP access to `.env`, configuration, logs, private upload storage, and any accidentally introduced non-public runtime material. Never expose a web-accessible database installer.
 
 Assume OpenSSL, cURL, PDO MySQL, and `mbstring` are required PHP extensions. Verify them explicitly and provide a useful setup error. Composer may be used only when a small dependency brings a clear security or maintenance benefit; committed/deployed runtime dependencies must work on the stated host. Do not depend on cron or shell access for ordinary web requests. Data publication may remain a controlled local or deployment-time operation.
 
@@ -343,7 +343,9 @@ The intended top-level shape is:
 ├── source/
 ├── database/
 │   ├── schema.sql
-│   └── parliament.sqlite          # generated full snapshot; stored through Git LFS for deployment handoff
+│   ├── parliament.sqlite          # generated full snapshot; stored through Git LFS for deployment handoff
+│   ├── mariadb/                   # application schema, contract, and standalone migrations
+│   └── exports/                   # deployment database dumps and manifests
 ├── notebooks/
 │   └── 01_import_source_data.ipynb
 ├── scripts/
@@ -355,7 +357,6 @@ The intended top-level shape is:
 │   ├── api/
 │   ├── assets/
 │   ├── backend/
-│   ├── database/
 │   └── storage/                   # protected non-public runtime data
 ├── tests/
 ├── .env.example

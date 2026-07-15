@@ -20,7 +20,7 @@ final class AiPromptStore
     public function active(string $purpose): array
     {
         if (preg_match('/^[a-z][a-z0-9_]{2,63}$/', $purpose) !== 1) {
-            throw new AiFilterException('AI_PROMPT_INVALID', 'Der KI-Prompt-Zweck ist ungÃ¼ltig.', 500);
+            throw new AiFilterException('AI_PROMPT_INVALID', 'Der KI-Prompt-Zweck ist ungültig.', 500);
         }
         $statement = $this->connection()->prepare(
             'SELECT id, purpose, version, system_text, output_schema_version

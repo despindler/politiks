@@ -138,7 +138,7 @@ Create the application database and a repeatable process for publishing parliame
 
 ### Outputs
 
-- MariaDB-compatible schema under `site/database/` for imported reference data and application-owned data.
+- MariaDB-compatible schema under `database/mariadb/` for imported reference data and application-owned data, outside the public document root.
 - Country-neutral reference tables corresponding to the required application read model.
 - Application tables for users, insights, insight members, selected vote evidence, campaign-context items, visibility, share tokens, and timestamps.
 - Deterministic publication tool that upserts or atomically replaces a versioned reference-data snapshot from SQLite.
@@ -317,7 +317,7 @@ Add a disabled-by-default, testable OpenAI integration boundary with versioned d
 ### Verification
 
 - Pure PHP tests cover request construction, instruction/data separation, schema parsing, refusals, malformed responses, unknown-ID rejection, duplicate normalization, bounds, and secret redaction.
-- Applying `site/database/schema.sql` twice remains idempotent and seeds exactly one active prompt version for the filter purpose.
+- Applying `database/mariadb/schema.sql` twice remains idempotent and seeds exactly one active prompt version for the filter purpose.
 - Local `.env.test` MariaDB smoke checks the new tables, active-template lookup, cache metadata, and guarded rate-limit accounting without making a paid API request.
 - With the feature disabled or the key absent, the application makes no external call and returns a stable unavailable state.
 

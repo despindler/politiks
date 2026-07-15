@@ -6,14 +6,27 @@ namespace Politiks\App\Ai;
 
 final class AiSelectionContract
 {
-    /** @return array<string, mixed> */
-    public static function schema(): array
+    /**
+     * @param list<int> $candidateIds
+     * @return array<string, mixed>
+     */
+    public static function schema(array $candidateIds): array
     {
+        if ($candidateIds === [] || !array_is_list($candidateIds)) {
+            throw new AiFilterException('AI_SCHEMA_INVALID', 'Die Kandidaten-IDs für das KI-Antwortformat fehlen.', 500);
+        }
+        $allowedIds = [];
+        foreach ($candidateIds as $candidateId) {
+            if (!is_int($candidateId) || $candidateId < 1 || isset($allowedIds[$candidateId])) {
+                throw new AiFilterException('AI_SCHEMA_INVALID', 'Die Kandidaten-IDs für das KI-Antwortformat sind ungültig.', 500);
+            }
+            $allowedIds[$candidateId] = true;
+        }
         $selection = [
             'type' => 'object',
             'additionalProperties' => false,
             'properties' => [
-                'id' => ['type' => 'integer'],
+                'id' => ['type' => 'integer', 'enum' => array_keys($allowedIds)],
                 'reason' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 500],
             ],
             'required' => ['id', 'reason'],
@@ -38,7 +51,7 @@ final class AiSelectionContract
     public static function normalize(array $data, array $candidateIds, int $maximumSelections): array
     {
         if ($maximumSelections < 1) {
-            throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Auswahlgrenze ist ungÃ¼ltig.');
+            throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Auswahlgrenze ist ungültig.');
         }
         $allowed = array_fill_keys(array_map('strval', $candidateIds), true);
         $seen = [];
@@ -52,15 +65,15 @@ final class AiSelectionContract
                 if (!is_array($item) || !array_key_exists('id', $item) || !array_key_exists('reason', $item)
                     || (!is_int($item['id']) && !(is_string($item['id']) && ctype_digit($item['id'])))
                     || !is_string($item['reason'])) {
-                    throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Antwort enthÃ¤lt einen ungÃ¼ltigen Treffer.');
+                    throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Antwort enthält einen ungültigen Treffer.');
                 }
                 $id = (int) $item['id'];
                 if ($id < 1 || !isset($allowed[(string) $id])) {
-                    throw new AiFilterException('AI_RESPONSE_UNKNOWN_ID', 'Die KI-Antwort enthÃ¤lt eine unbekannte Abstimmungs-ID.');
+                    throw new AiFilterException('AI_RESPONSE_UNKNOWN_ID', 'Die KI-Antwort enthält eine unbekannte Abstimmungs-ID.');
                 }
                 $reason = trim($item['reason']);
                 if ($reason === '' || strlen($reason) > 500) {
-                    throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Antwort enthÃ¤lt eine ungÃ¼ltige BegrÃ¼ndung.');
+                    throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Antwort enthält eine ungültige Begründung.');
                 }
                 if (isset($seen[$id])) {
                     continue;
@@ -68,7 +81,7 @@ final class AiSelectionContract
                 $seen[$id] = true;
                 $result[$group][] = ['id' => $id, 'reason' => $reason];
                 if (count($seen) > $maximumSelections) {
-                    throw new AiFilterException('AI_RESPONSE_TOO_LARGE', 'Die KI-Antwort enthÃ¤lt zu viele Treffer.');
+                    throw new AiFilterException('AI_RESPONSE_TOO_LARGE', 'Die KI-Antwort enthält zu viele Treffer.');
                 }
             }
         }

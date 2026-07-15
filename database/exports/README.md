@@ -7,14 +7,14 @@ git lfs install
 git lfs pull
 ```
 
-Artifacts for the full Swiss snapshot rebuilt against the current application schema on 2026-07-15:
+Artifacts for the full Swiss snapshot rebuilt against the milestone-14 application schema on 2026-07-15:
 
 | File | Purpose | Bytes | SHA-256 |
 | --- | --- | ---: | --- |
 | `../parliament.sqlite` | Reproducible research and publication source | 798752768 | `8094aae5ef23bc4da4a28943610b7ccb0e3b36e77c9b14fd2cd6f2cc2f2a1e0a` |
 | `politiks-full-20260715.sql.gz` | Complete MariaDB schema and production reference publication | 37705597 | `b682add9e258a3bf973d4dc9586e62d66cac30a340139f2b27d0a13c16348b03` |
 
-The MariaDB dump contains `DROP TABLE IF EXISTS` statements, the versioned AI prompt seeds, and empty user, insight, campaign-context, AI-run, and AI-cache tables. Back up an existing deployment before importing it. The schema, source snapshots, and import notebook remain authoritative; these binaries are deployment conveniences rather than independent sources of truth.
+The MariaDB dump contains `DROP TABLE IF EXISTS` statements, the milestone-14 AI prompt seeds, and empty user, insight, campaign-context, AI-run, and AI-cache tables. After importing this dump, apply `database/mariadb/migrations/migrate_milestones_11_14_ai_filter.sql` once to activate the post-release selection-prompt v2 candidate-ID hardening. Back up an existing deployment before importing it. The schema, source snapshots, and import notebook remain authoritative; these binaries are deployment conveniences rather than independent sources of truth.
 
 ## Five-part phpMyAdmin import
 

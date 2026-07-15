@@ -36,8 +36,8 @@ Consequences:
 
 - The small fixture remains a valid service-shape proof but must not be described as Council of States roll-call coverage.
 - The full snapshot contains explicit Council of States individual votes from spring 2022, matching the start of complete public access in the official rules.
-- National Council spreadsheet coverage begins in winter 2011 even though other official access routes cover earlier votes. National Council 2003â€“2011 and the narrower 1996â€“2003 scope remain future acquisition work.
-- Council of States 2014â€“2021 voting protocols remain available under the narrower official rules but are outside the current machine-readable spreadsheet snapshot.
+- National Council spreadsheet coverage begins in winter 2011 even though other official access routes cover earlier votes. National Council 2003–2011 and the narrower 1996–2003 scope remain future acquisition work.
+- Council of States 2014–2021 voting protocols remain available under the narrower official rules but are outside the current machine-readable spreadsheet snapshot.
 - A person's current chamber is never used to label a historical event; workbook provenance supplies the chamber.
 
 ## Other limitations

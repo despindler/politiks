@@ -35,13 +35,13 @@ final class OpenAiResponsesClient implements AiResponsesClient
         string $safetyIdentifier,
     ): array {
         if ($developerPrompt === '' || strlen($developerPrompt) > 50_000) {
-            throw new AiFilterException('AI_PROMPT_INVALID', 'Die KI-Filteranweisung ist ungÃ¼ltig.', 500);
+            throw new AiFilterException('AI_PROMPT_INVALID', 'Die KI-Filteranweisung ist ungültig.', 500);
         }
         if (preg_match('/^[a-z][a-z0-9_]{2,63}$/', $schemaName) !== 1) {
-            throw new AiFilterException('AI_SCHEMA_INVALID', 'Das KI-Antwortformat ist ungÃ¼ltig.', 500);
+            throw new AiFilterException('AI_SCHEMA_INVALID', 'Das KI-Antwortformat ist ungültig.', 500);
         }
         if (preg_match('/^[A-Za-z0-9_-]{8,64}$/', $safetyIdentifier) !== 1) {
-            throw new AiFilterException('AI_SAFETY_ID_INVALID', 'Die KI-Sicherheitskennung ist ungÃ¼ltig.', 500);
+            throw new AiFilterException('AI_SAFETY_ID_INVALID', 'Die KI-Sicherheitskennung ist ungültig.', 500);
         }
 
         try {
@@ -105,10 +105,10 @@ final class OpenAiResponsesClient implements AiResponsesClient
         try {
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $error) {
-            throw new AiFilterException('AI_RESPONSE_INVALID', 'Der KI-Dienst hat eine ungÃ¼ltige Antwort geliefert.', 502, $error);
+            throw new AiFilterException('AI_RESPONSE_INVALID', 'Der KI-Dienst hat eine ungültige Antwort geliefert.', 502, $error);
         }
         if (!is_array($payload) || ($payload['status'] ?? null) !== 'completed' || !is_array($payload['output'] ?? null)) {
-            throw new AiFilterException('AI_RESPONSE_INCOMPLETE', 'Die KI-Antwort wurde nicht vollstÃ¤ndig abgeschlossen.', 502);
+            throw new AiFilterException('AI_RESPONSE_INCOMPLETE', 'Die KI-Antwort wurde nicht vollständig abgeschlossen.', 502);
         }
 
         $outputText = null;
@@ -129,12 +129,12 @@ final class OpenAiResponsesClient implements AiResponsesClient
             }
         }
         if ($outputText === null) {
-            throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Antwort enthÃ¤lt keine Auswahl.', 502);
+            throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Antwort enthält keine Auswahl.', 502);
         }
         try {
             $data = json_decode($outputText, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $error) {
-            throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Auswahl ist kein gÃ¼ltiges JSON.', 502, $error);
+            throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Auswahl ist kein gültiges JSON.', 502, $error);
         }
         if (!is_array($data)) {
             throw new AiFilterException('AI_RESPONSE_INVALID', 'Die KI-Auswahl entspricht nicht dem erwarteten Format.', 502);
@@ -159,7 +159,7 @@ final class OpenAiResponsesClient implements AiResponsesClient
     private function curlTransport(string $url, array $headers, string $body, int $timeoutSeconds): array
     {
         if (!function_exists('curl_init')) {
-            throw new AiFilterException('AI_PROVIDER_UNAVAILABLE', 'Die cURL-Erweiterung ist nicht verfÃ¼gbar.', 503);
+            throw new AiFilterException('AI_PROVIDER_UNAVAILABLE', 'Die cURL-Erweiterung ist nicht verfügbar.', 503);
         }
         $handle = curl_init($url);
         if ($handle === false) {

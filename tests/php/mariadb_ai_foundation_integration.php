@@ -31,7 +31,7 @@ try {
     $pdo = MariaDb::connect(Environment::load($envPath));
     $publicationId = ensureWizardReferenceFixture($pdo);
     $prompt = (new AiPromptStore(static fn (): PDO => $pdo))->active('vote_filter_selection');
-    if ($prompt['version'] !== 1 || $prompt['output_schema_version'] !== 'vote_filter_selection_v1') {
+    if ($prompt['version'] !== 2 || $prompt['output_schema_version'] !== 'vote_filter_selection_v1') {
         throw new RuntimeException('The active AI selection prompt is not the expected versioned contract.');
     }
 

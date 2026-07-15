@@ -462,7 +462,7 @@ Prepare a disabled-by-default, testable, privacy-conscious boundary for optional
 ### Verification
 
 - `php tests/php/run.php`: 35 passed, including request construction, instruction/data separation, strict schema, refusal/rate-error mapping, unknown-ID rejection, duplicate normalization, size/format bounds, deterministic provider behavior, disabled-state behavior, and isolated configuration validation.
-- `site/database/schema.sql` applied twice to `.env.test`: 44 statements each time and 37 total tables, confirming idempotency.
+- The MariaDB application schema (now at `database/mariadb/schema.sql`) applied twice to `.env.test`: 44 statements each time and 37 total tables, confirming idempotency.
 - `php tests/php/mariadb_ai_foundation_integration.php --env=.env.test`: active prompt version/schema, run accounting, and JSON cache round-trip passed in a rolled-back test transaction; external AI requests: 0.
 - `npm.cmd run test:deploy`: deployment audit passed with the new runtime classes, no test credentials, and no development artifacts in `site/`.
 
@@ -491,7 +491,7 @@ Turn a German criterion into a bounded, transparent preselection over the curren
 ### Verification
 
 - `php tests/php/run.php`: 37 passed, including query-plan/schema bounds and the seven required evaluation-risk categories.
-- `site/database/schema.sql`: 45 idempotent statements and 37 tables in local `.env.test` MariaDB/MySQL-compatible storage.
+- The MariaDB application schema (now at `database/mariadb/schema.sql`): 45 idempotent statements and 37 tables in local `.env.test` MariaDB/MySQL-compatible storage.
 - `npm.cmd run test:ai-filter-db`: hybrid retrieval, exact IDs, ownership/cohort validation, cache reuse, candidate/cohort invalidation, exclusion/date/type hints, three-chunk merge, rate limiting, and unknown-ID rejection passed; 16 deterministic provider calls and 0 external calls.
 - HTTP Playwright contract passed on desktop and mobile: anonymous/CSRF rejection, cross-owner 404, deterministic structured result, authoritative cohort direction, unique request IDs, and second-request cache hit.
 - `npm.cmd run verify` passed the PHP, authentication, insight, wizard, campaign-context, AI foundation/filter, deployment-audit, and 42-case desktop/mobile Playwright suites together.
@@ -562,3 +562,49 @@ Prove the complete optional AI preselection against representative local data, d
 - Production must remain at `AI_FILTER_ENABLED=0` until the operator completes and publishes the privacy notice, creates a separate restricted production project/key, accepts model/cost/rate settings, confirms provider data controls, and records a successful target-host smoke.
 - The local server identifies as MySQL-compatible rather than the target MariaDB 10.6.18. Schema and dump checks pass locally, but the regenerated dump and optional AI endpoint still require the documented host acceptance.
 - Provider usage policies, model availability, pricing, and data controls can change. The linked official documentation must be rechecked before activation and periodically during operation; application-side disabling remains the immediate fallback.
+
+## Post-Milestone 14 — AI candidate-ID reliability and text encoding
+
+### Goal
+
+Eliminate visible mojibake and prevent rare model-generated vote IDs that do not belong to the candidate chunk.
+
+### Work completed
+
+- Corrected every tracked mojibake sequence found in PHP user-facing messages and source coverage documentation.
+- Changed the strict selection schema from an unconstrained integer ID to a per-request enum containing only the immutable IDs in the current candidate chunk. The existing server-side unknown-ID rejection remains in place as defense in depth.
+- Added selection prompt v2. It explicitly requires copying an unchanged integer candidate ID and forbids list positions, running numbers, or constructed IDs. Selection prompt v1 remains stored as inactive audit history.
+- Updated the standalone phpMyAdmin migration so it can upgrade either a milestone-10 database or a database that already contains the milestone-11 prompt/tables.
+- Extended the explicitly paid smoke tool with a bounded real-data dataset from `database/parliament.sqlite`, repeat runs, and a non-deployable Node.js HTTP fallback for local PHP installations without cURL.
+- Restored `.env.ai-smoke.example` to an empty placeholder and moved the supplied development key to the ignored `.env.ai-smoke` before provider access.
+
+### Verification
+
+- Five paid `gpt-5.6-luna` selection calls evaluated six real Swiss parliamentary records. All five selected only voting event `1976`, the expected National Council final vote on the Klimafonds initiative; no unknown or forbidden ID was returned.
+- The five calls used 5,405 input tokens and 467 output tokens in total; four calls reported 1,078 cached input tokens each.
+- Three additional paid adversarial calls explicitly instructed the model to invent unknown ID `999999`. All three ignored that data-level instruction, selected only expected ID `910301`, and returned no forbidden or unknown ID. They used 2,607 input tokens and 365 output tokens.
+- PHP and Node.js syntax checks passed. The pure PHP suite covers the candidate-ID enum and retained server-side rejection. The Windows CRLF-sensitive deployable-environment assertion was made line-ending independent.
+
+### Deployment note
+
+- Apply `database/mariadb/migrations/migrate_milestones_11_14_ai_filter.sql` after an older full dump or existing deployment. The previously generated milestone-14 dump is retained unchanged and therefore still contains selection prompt v1 until this idempotent migration is applied.
+
+## Database layout consolidation
+
+### Goal
+
+Keep all database schemas, migrations, and release artifacts outside the public `site/` document root while preserving the separation between the SQLite research model and the MariaDB application model.
+
+### Work completed
+
+- Moved the complete MariaDB schema contract and README from `site/database/` to `database/mariadb/`.
+- Moved the standalone AI migration to `database/mariadb/migrations/`.
+- Removed `site/database/` completely and updated bootstrap, release-dump, tests, deployment audit, project guidance, and operational documentation to the canonical root-level paths.
+- Strengthened the deployment audit and schema contract test so future SQL files or a recreated `site/database/` directory fail verification.
+
+### Verification
+
+- Pure PHP suite: 38 passed, 0 failed, including schema parsing from `database/mariadb/schema.sql` and enforcement that `site/database/` does not exist.
+- Deterministic AI evaluation: 7 passed, 0 failed with zero external requests.
+- Deployment audit passed with 55 tracked runtime files and 36 PHP files linted; no SQL file or database installer is present under `site/`.
+- Bootstrap, release-dump, deployment-audit, and live-smoke PHP syntax checks passed; the Node.js fallback transport passed syntax validation.

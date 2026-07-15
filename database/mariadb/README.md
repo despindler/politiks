@@ -25,4 +25,10 @@ php scripts/publish_reference_data.php --env=.env.test --sqlite=database/parliam
 php scripts/verify_reference_publication.php --env=.env.test
 ```
 
-`bootstrap_mariadb.php --reset` destroys the configured test schema and is accepted only for a file named `.env.test`. These CLI scripts are outside the deployment root. Milestone 6 adds Apache rules denying direct HTTP access to this directory and other internal runtime paths.
+`bootstrap_mariadb.php --reset` destroys the configured test schema and is accepted only for a file named `.env.test`. These CLI scripts and this schema directory are outside the deployment root.
+
+## Standalone migrations
+
+`migrations/migrate_milestones_11_14_ai_filter.sql` is an idempotent MariaDB 10.6 migration for upgrading an existing milestone-10 application database through milestones 11-14 and the subsequent candidate-ID reliability fix. It creates the three AI-filter application tables, preserves selection prompt v1 as retired history, and activates hardened selection prompt v2 alongside query-plan prompt v1. Back up and select the existing application database in phpMyAdmin, then paste and execute the complete script from its SQL tab.
+
+This directory is repository tooling and is not deployed below the public `site/` document root. The application exposes no HTTP database installer or schema file.

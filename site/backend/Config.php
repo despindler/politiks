@@ -100,10 +100,10 @@ final class Config
         $aiEnabled = $aiEnabledValue === '1';
         $openAiApiKey = trim(Environment::value($values, 'OPENAI_API_KEY', '') ?? '');
         if ($openAiApiKey !== '' && (strlen($openAiApiKey) < 20 || strlen($openAiApiKey) > 512)) {
-            throw new RuntimeException('OPENAI_API_KEY ist ungÃ¼ltig.');
+            throw new RuntimeException('OPENAI_API_KEY ist ungültig.');
         }
         if ($aiEnabled && $openAiApiKey === '') {
-            throw new RuntimeException('OPENAI_API_KEY fehlt fÃ¼r den aktivierten KI-Filter.');
+            throw new RuntimeException('OPENAI_API_KEY fehlt für den aktivierten KI-Filter.');
         }
         $responsesUrl = Environment::value(
             $values,
@@ -122,7 +122,7 @@ final class Config
         }
         $openAiModel = Environment::value($values, 'OPENAI_MODEL', 'gpt-5.6-luna') ?? '';
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/', $openAiModel) !== 1) {
-            throw new RuntimeException('OPENAI_MODEL ist ungÃ¼ltig.');
+            throw new RuntimeException('OPENAI_MODEL ist ungültig.');
         }
         $boundedInteger = static function (
             string $key,
@@ -146,7 +146,7 @@ final class Config
         $aiCandidateLimit = $boundedInteger('AI_FILTER_CANDIDATE_LIMIT', 300, 25, 500);
         $aiChunkSize = $boundedInteger('AI_FILTER_CHUNK_SIZE', 75, 10, 100);
         if ($aiChunkSize > $aiCandidateLimit) {
-            throw new RuntimeException('AI_FILTER_CHUNK_SIZE darf das Kandidatenlimit nicht Ã¼berschreiten.');
+            throw new RuntimeException('AI_FILTER_CHUNK_SIZE darf das Kandidatenlimit nicht überschreiten.');
         }
         $aiCacheTtlSeconds = $boundedInteger('AI_FILTER_CACHE_TTL_SECONDS', 3600, 60, 86_400);
         $aiHourlyLimit = $boundedInteger('AI_FILTER_HOURLY_LIMIT', 10, 1, 100);

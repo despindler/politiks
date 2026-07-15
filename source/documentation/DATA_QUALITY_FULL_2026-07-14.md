@@ -80,7 +80,7 @@ These choices remain available and are labeled as lacking dated membership evide
 ## Historical and language gaps
 
 - Complete National Council spreadsheet coverage starts in winter 2011. Official public-access rules cover all National Council votes since winter 2003 and a narrower set from 1996; those earlier records need a separate official adapter.
-- Complete Council of States spreadsheets start in spring 2022. The narrower 2014â€“2021 protocol scope requires Official Bulletin extraction and is not in this snapshot.
+- Complete Council of States spreadsheets start in spring 2022. The narrower 2014–2021 protocol scope requires Official Bulletin extraction and is not in this snapshot.
 - German was requested from the legacy service and German workbook links were selected, but individual official fields can still contain French or Italian text.
 - Legacy reference JSON travels over the source's observed HTTP-only endpoint. HTTPS is used for Parliament pages, PDFs, and XLSX files. Checksums secure preserved bytes after retrieval, not the legacy HTTP transport itself.
 - The snapshot is time-bound. Later corrections or newly published sessions require a new plan, directory, and manifest rather than changing these bytes.

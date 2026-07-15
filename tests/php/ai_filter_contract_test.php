@@ -20,6 +20,7 @@ return [
         $fixture = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
         assertSameValue(1, $fixture['version'], 'The evaluation fixture should be explicitly versioned.');
         assertSameValue('de', $fixture['language'], 'The MVP evaluation language should be German.');
+        assertSameValue(2, $fixture['selection_prompt_version'], 'The evaluation must target the active selection prompt.');
         $ids = array_column($fixture['cases'], 'id');
         foreach ([
             'clear_match',
@@ -72,6 +73,12 @@ return [
         }
     },
     'AI selection contract accepts only known candidate IDs' => static function (): void {
+        $schema = AiSelectionContract::schema([12, 13, 14]);
+        assertSameValue(
+            [12, 13, 14],
+            $schema['properties']['matches']['items']['properties']['id']['enum'],
+            'The provider schema must restrict IDs to the current candidate chunk.',
+        );
         $normalized = AiSelectionContract::normalize([
             'matches' => [
                 ['id' => 12, 'reason' => '  Passt zum Kriterium.  '],
@@ -153,7 +160,7 @@ return [
             'Verwende nur Kandidaten-IDs.',
             ['criterion' => $criterion, 'candidates' => [['id' => 12, 'title' => 'Vorlage']]],
             'vote_filter_selection_v1',
-            AiSelectionContract::schema(),
+            AiSelectionContract::schema([1]),
             'user_abcdef123456',
         );
 
@@ -184,7 +191,7 @@ return [
             ],
         );
         try {
-            $refusalClient->structuredResponse('Trusted prompt', [], 'vote_filter_selection_v1', AiSelectionContract::schema(), 'user_abcdef123456');
+            $refusalClient->structuredResponse('Trusted prompt', [], 'vote_filter_selection_v1', AiSelectionContract::schema([1]), 'user_abcdef123456');
             throw new TestFailure('Provider refusal should be surfaced.');
         } catch (AiFilterException $error) {
             assertSameValue('AI_RESPONSE_REFUSED', $error->errorCode, 'Refusals need a stable error code.');
@@ -199,7 +206,7 @@ return [
             static fn (): array => ['status' => 429, 'body' => 'sensitive provider response'],
         );
         try {
-            $failureClient->structuredResponse('Trusted prompt', [], 'vote_filter_selection_v1', AiSelectionContract::schema(), 'user_abcdef123456');
+            $failureClient->structuredResponse('Trusted prompt', [], 'vote_filter_selection_v1', AiSelectionContract::schema([1]), 'user_abcdef123456');
             throw new TestFailure('Provider errors should be surfaced.');
         } catch (AiFilterException $error) {
             assertSameValue('AI_PROVIDER_RATE_LIMITED', $error->errorCode, 'Rate limiting needs a stable error code.');
@@ -215,7 +222,7 @@ return [
             'Prompt',
             ['criterion' => 'Klima'],
             'vote_filter_selection_v1',
-            AiSelectionContract::schema(),
+            AiSelectionContract::schema([1]),
             'user_abcdef123456',
         );
         assertSameValue([], $response['data']['matches'], 'The deterministic response should be returned.');

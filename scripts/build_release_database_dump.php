@@ -65,7 +65,7 @@ try {
     });
 
     $connection = MariaDb::connect($environment);
-    $schemaStatements = SqlScript::execute($connection, $root . '/site/database/schema.sql');
+    $schemaStatements = SqlScript::execute($connection, $root . '/database/mariadb/schema.sql');
     foreach (['app_user', 'insight', 'insight_member', 'insight_vote_evidence', 'insight_campaign_context', 'ai_filter_run', 'ai_filter_cache'] as $table) {
         $count = (int) $connection->query(sprintf('SELECT COUNT(*) FROM `%s`', $table))->fetchColumn();
         if ($count !== 0) {

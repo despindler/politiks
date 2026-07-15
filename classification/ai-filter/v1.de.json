@@ -2,7 +2,7 @@
   "evaluation_id": "politiks-ai-vote-filter-de-v1",
   "version": 1,
   "language": "de",
-  "selection_prompt_version": 1,
+  "selection_prompt_version": 2,
   "records": [
     {
       "id": 910301,

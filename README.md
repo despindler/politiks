@@ -175,7 +175,7 @@ php scripts/verify_reference_publication.php `
 
 Publication records the source snapshot/schema, source-file digest, taxonomy version/digest, reviewed-classification digest, per-table counts, and a deterministic content checksum. Repeating unchanged input reuses the existing publication. A new snapshot is populated inside one transaction and becomes visible only when every table reconciles. Pending or rejected classifications are never copied; only the reviewed projection is publishable.
 
-The generated SQLite database can come from either the fixture or full import. Production publication should use a freshly verified full import. Bootstrap and publication are CLI tools outside `site/`; there is no HTTP installer. The deployable schema contract is documented in `site/database/README.md`.
+The generated SQLite database can come from either the fixture or full import. Production publication should use a freshly verified full import. Bootstrap and publication are CLI tools outside `site/`; there is no HTTP installer. The MariaDB application schema contract is documented in `database/mariadb/README.md` and remains outside the public document root.
 
 For a shared host where phpMyAdmin cannot accept the complete production dump, five consecutively importable gzip parts are provided under `database/exports/`. Select a clean target database and import `part-01-of-05.sql.gz` through `part-05-of-05.sql.gz` exactly once in numeric order. The checksums, failure-recovery rule, verification command, and regeneration command are documented in `database/exports/README.md`.
 
@@ -245,7 +245,7 @@ Authenticated wizard endpoints are owner-only and CSRF-protected on mutation:
 - `POST /api/insights/{public-id}/ai-filter` performs owner-only, CSRF-protected hybrid retrieval and structured semantic preselection for the current validated cohort; and
 - `PUT /api/insights/{public-id}/evidence` safely reorders or replaces selected votes.
 
-The AI endpoint first produces a bounded structured search plan, retrieves exact/full-text candidates inside the insight's immutable publication/scope in MariaDB, and evaluates only that compact pool in bounded chunks. It returns separate matching and ambiguous IDs with reasons and preview metadata. It never selects evidence or changes the insight. Repeated identical owner/insight/publication/prompt/model/criterion/cohort requests reuse a time-limited cache; uncached requests are subject to a per-user hourly limit. Deterministic integration and HTTP tests exercise this flow without external requests:
+The AI endpoint first produces a bounded structured search plan, retrieves exact/full-text candidates inside the insight's immutable publication/scope in MariaDB, and evaluates only that compact pool in bounded chunks. It returns separate matching and ambiguous IDs with reasons and preview metadata. Selection prompt v2 explicitly distinguishes immutable candidate IDs from list positions, while each chunk's strict output schema restricts `id` to an enum of the IDs actually supplied. Server-side validation remains a final guard. The filter never selects evidence or changes the insight. Repeated identical owner/insight/publication/prompt/model/criterion/cohort requests reuse a time-limited cache; uncached requests are subject to a per-user hourly limit. Deterministic integration and HTTP tests exercise this flow without external requests:
 
 ```powershell
 npm.cmd run test:ai-filter-db

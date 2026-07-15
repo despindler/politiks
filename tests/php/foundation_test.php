@@ -47,8 +47,8 @@ return [
     'deployable AI environment is disabled and placeholder-only' => static function (): void {
         $content = file_get_contents(__DIR__ . '/../../site/.env.example');
         assertTrue(is_string($content), 'site/.env.example must be readable.');
-        assertTrue(preg_match('/^AI_FILTER_ENABLED=0$/m', $content) === 1, 'Deployable AI must default to disabled.');
-        assertTrue(preg_match('/^OPENAI_API_KEY=$/m', $content) === 1, 'The deployable example must contain no AI key.');
+        assertTrue(preg_match('/^AI_FILTER_ENABLED=0\r?$/m', $content) === 1, 'Deployable AI must default to disabled.');
+        assertTrue(preg_match('/^OPENAI_API_KEY=\r?$/m', $content) === 1, 'The deployable example must contain no AI key.');
         foreach (['POLITIKS_TEST_AI', 'TestAiResponsesClient', 'playwright-test-only-openai-key'] as $marker) {
             assertTrue(!str_contains($content, $marker), 'Deployable AI placeholders must not contain test adapters or credentials.');
         }

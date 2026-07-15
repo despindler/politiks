@@ -65,7 +65,7 @@ return [
         assertTrue($rejected, 'Non-ISO source dates must fail instead of being coerced by MariaDB.');
     },
     'MariaDB schema contains immutable publication and application ownership boundaries' => static function (): void {
-        $schema = file_get_contents(__DIR__ . '/../../site/database/schema.sql');
+        $schema = file_get_contents(__DIR__ . '/../../database/mariadb/schema.sql');
         assertTrue($schema !== false, 'MariaDB schema must be readable.');
         foreach ([
             'CREATE TABLE IF NOT EXISTS reference_publication',
@@ -92,16 +92,20 @@ return [
         );
     },
     'schema bootstrap script is executable as individual statements' => static function (): void {
-        $sql = file_get_contents(__DIR__ . '/../../site/database/schema.sql');
+        $sql = file_get_contents(__DIR__ . '/../../database/mariadb/schema.sql');
         assertTrue($sql !== false, 'MariaDB schema must be readable.');
         $statements = SqlScript::statements($sql);
         assertTrue(is_array($statements), 'SQL script parser must return statements.');
-        assertSameValue(45, count($statements), 'The complete schema statement count should remain explicit.');
+        assertSameValue(46, count($statements), 'The complete schema statement count should remain explicit.');
         foreach ($statements as $statement) {
             assertTrue(trim($statement) !== '', 'Schema must not contain empty executable statements.');
         }
     },
     'database tooling is outside the public deployment root' => static function (): void {
+        assertTrue(
+            !is_dir(__DIR__ . '/../../site/database'),
+            'The public deployment root must not contain a database directory.'
+        );
         assertTrue(
             !is_file(__DIR__ . '/../../site/bootstrap_mariadb.php'),
             'The schema bootstrap must not be web-accessible.'
