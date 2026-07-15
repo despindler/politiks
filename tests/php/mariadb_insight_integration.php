@@ -83,19 +83,43 @@ try {
     if (!$denied) {
         throw new RuntimeException('Ownership tampering was not rejected.');
     }
+    $deleteDenied = false;
+    try {
+        $store->delete($otherId, $draft['public_id']);
+    } catch (InsightException $error) {
+        $deleteDenied = $error->status === 404;
+    }
+    if (!$deleteDenied) {
+        throw new RuntimeException('Cross-owner deletion was not rejected.');
+    }
     if ($store->ownerPage($ownerId, 1, 24)['pagination']['total'] !== 1) {
         throw new RuntimeException('Owner catalogue did not include all states.');
     }
-    $store->archive($ownerId, $draft['public_id']);
+    $deletedInsightId = $pdo->prepare('SELECT id FROM insight WHERE public_id=?');
+    $deletedInsightId->execute([$draft['public_id']]);
+    $deletedInsightId = (int) $deletedInsightId->fetchColumn();
+    $store->delete($ownerId, $draft['public_id']);
     if ($store->findVisible($draft['public_id'], $ownerId) !== null) {
-        throw new RuntimeException('Archived insight remained retrievable.');
+        throw new RuntimeException('Deleted insight remained retrievable.');
+    }
+    $deletedInsight = $pdo->prepare('SELECT COUNT(*) FROM insight WHERE public_id=?');
+    $deletedInsight->execute([$draft['public_id']]);
+    if ((int) $deletedInsight->fetchColumn() !== 0) {
+        throw new RuntimeException('Deleted insight remained in the database.');
+    }
+    foreach (['insight_member', 'insight_vote_evidence'] as $dependentTable) {
+        $remaining = $pdo->prepare("SELECT COUNT(*) FROM $dependentTable WHERE insight_id=?");
+        $remaining->execute([$deletedInsightId]);
+        if ((int) $remaining->fetchColumn() !== 0) {
+            throw new RuntimeException("Insight deletion left records in $dependentTable.");
+        }
     }
 
     echo json_encode([
         'insight_lifecycle_valid' => true,
         'ownership_isolated' => true,
         'unlisted_token_valid' => true,
-        'archive_removes_visibility' => true,
+        'deletion_removes_database_record' => true,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Insight integration failed: ' . $error->getMessage() . PHP_EOL);

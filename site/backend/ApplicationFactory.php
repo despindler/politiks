@@ -54,7 +54,7 @@ final class ApplicationFactory
             $config,
             new AuthService($verifier, $users, $session),
             new Csrf($session),
-            new InsightStore($database->connection(...), $config->appUrl),
+            new InsightStore($database->connection(...), $config->appUrl, $config->storagePath),
             new WizardStore($database->connection(...)),
             $campaignContexts,
             new AiVoteFilterService(

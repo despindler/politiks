@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const state = { csrfToken: '', user: null, googleClientId: null, publicPage: 0, minePage: 0, editing: null };
+  const state = { csrfToken: '', user: null, googleClientId: null, publicPage: 0, minePage: 0, editing: null, deleting: false };
   const themeMeta = {
     system: { label: 'System', icon: 'bi-circle-half' },
     light: { label: 'Hell', icon: 'bi-sun' },
@@ -212,7 +212,15 @@
     const summary = element('p', 'small text-body-secondary', `${insight.member_count} Mitglieder · ${insight.evidence_count} Abstimmungen`);
     const edit = element('a', 'btn btn-outline-secondary w-100', 'Im Assistenten bearbeiten');
     edit.href = `/insights/${insight.public_id}/bearbeiten`;
-    card.append(summary, edit);
+    const remove = element('button', 'btn btn-outline-danger w-100', 'Löschen');
+    remove.type = 'button';
+    remove.addEventListener('click', () => {
+      state.editing = insight;
+      deleteInsight();
+    });
+    const actions = element('div', 'owner-card-actions d-grid gap-2');
+    actions.append(edit, remove);
+    card.append(summary, actions);
     column.append(card);
     return column;
   }
@@ -285,16 +293,26 @@
     }
   }
 
-  async function archiveInsight() {
-    if (!state.editing || !window.confirm('Diesen Insight wirklich archivieren?')) return;
+  async function deleteInsight() {
+    if (!state.editing || state.deleting) return;
+    const insight = state.editing;
+    if (!window.confirm(`Insight „${insight.title || 'Unbenannter Insight'}“ endgültig löschen? Alle zugehörigen Daten werden unwiderruflich gelöscht.`)) return;
+    state.deleting = true;
     try {
-      await api(`/api/insights/${state.editing.public_id}`, { method: 'DELETE', body: '{}' });
+      await api(`/api/insights/${insight.public_id}`, { method: 'DELETE', body: '{}' });
       editorModal().hide();
+      state.editing = null;
       await Promise.all([loadMine(), loadPublic()]);
     } catch (error) {
       const box = document.querySelector('[data-editor-error]');
-      box.textContent = error.message;
-      box.classList.remove('d-none');
+      if (document.querySelector('#insight-editor')?.classList.contains('show')) {
+        box.textContent = error.message;
+        box.classList.remove('d-none');
+      } else {
+        showMessage(error.message || 'Der Insight konnte nicht gelöscht werden.');
+      }
+    } finally {
+      state.deleting = false;
     }
   }
 
@@ -347,7 +365,7 @@
     document.querySelector('[data-mine-more]')?.addEventListener('click', () => loadMine(true));
     document.querySelector('[data-create-insight]')?.addEventListener('click', createInsight);
     document.querySelector('[data-insight-form]')?.addEventListener('submit', saveInsight);
-    document.querySelector('[data-archive-insight]')?.addEventListener('click', archiveInsight);
+    document.querySelector('[data-delete-insight]')?.addEventListener('click', deleteInsight);
     document.querySelector('[data-copy-share]')?.addEventListener('click', async () => {
       await navigator.clipboard.writeText(document.querySelector('[data-share-url]').value);
       document.querySelector('[data-copy-share]').textContent = 'Kopiert';

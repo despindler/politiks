@@ -180,7 +180,7 @@ GET /.env                                  404 oder 403
 GET /assets/app.css                        200, Cache-Control vorhanden
 ```
 
-Zusätzlich in den Response-Headern CSP, `X-Content-Type-Options: nosniff`, Referrer-Policy und auf HTTPS `Strict-Transport-Security` prüfen. Danach mit einem echten Google-Konto anmelden, einen Entwurf erstellen, eine Bilddatei hochladen, den geschützten Abruf prüfen und wieder archivieren. PHP- beziehungsweise Apache-Logs dürfen weder Token noch Konfigurationswerte enthalten.
+Zusätzlich in den Response-Headern CSP, `X-Content-Type-Options: nosniff`, Referrer-Policy und auf HTTPS `Strict-Transport-Security` prüfen. Danach mit einem echten Google-Konto anmelden, einen Entwurf erstellen, eine Bilddatei hochladen, den geschützten Abruf prüfen und den Insight wieder löschen. Dabei müssen auch der Datenbankdatensatz und die geschützte Bilddatei entfernt werden. PHP- beziehungsweise Apache-Logs dürfen weder Token noch Konfigurationswerte enthalten.
 
 Falls die KI-Funktion freigegeben wurde: Step 3 öffnen, einen klaren Evaluationsfall ausführen, Request-ID und aggregierten Laufdatensatz prüfen, den Filter entfernen und bestätigen, dass dabei keine Evidenz ausgewählt wurde. Timeout-/Fehleranzeige und `AI_FILTER_ENABLED=0` als Notabschaltung ebenfalls auf dem Zielhost testen.
 

@@ -62,7 +62,7 @@ async function addLink(page, malicious = false) {
   await expect(modal).toBeHidden();
 }
 
-async function archive(page, publicId) {
+async function deleteInsight(page, publicId) {
   const status = await page.evaluate(async (id) => {
     const session = await fetch('/api/session').then((response) => response.json());
     const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token };
@@ -130,7 +130,7 @@ test('image, YouTube and link context are validated, safely rendered, reordered 
     await expect(page.locator('.public-context-card iframe')).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
     await expect(page.locator('.public-context-card img')).toBeVisible();
   } finally {
-    await archive(page, publicId);
+    await deleteInsight(page, publicId);
   }
 });
 
@@ -155,6 +155,6 @@ test('@visual campaign context remains composed in both themes', async ({ page }
       });
     }
   } finally {
-    await archive(page, publicId);
+    await deleteInsight(page, publicId);
   }
 });

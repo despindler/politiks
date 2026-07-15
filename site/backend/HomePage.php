@@ -161,7 +161,7 @@ final class HomePage
                         <div class="share-panel rounded-3 p-3 d-none" data-share-panel><label class="form-label" for="insight-share-url">Neuer Freigabelink</label><div class="input-group"><input class="form-control" id="insight-share-url" readonly data-share-url><button class="btn btn-outline-secondary" type="button" data-copy-share><i class="bi bi-copy me-1"></i>Kopieren</button></div><p class="small text-body-secondary mt-2 mb-0">Der bisherige Link ist damit ungültig.</p></div>
                     </div>
                     <div class="modal-footer flex-column flex-sm-row">
-                        <button type="button" class="btn btn-outline-danger w-100 me-sm-auto" data-archive-insight><i class="bi bi-archive me-2"></i>Archivieren</button>
+                        <button type="button" class="btn btn-outline-danger w-100 me-sm-auto" data-delete-insight><i class="bi bi-trash3 me-2"></i>Löschen</button>
                         <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Abbrechen</button>
                         <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2 me-2"></i>Speichern</button>
                     </div>

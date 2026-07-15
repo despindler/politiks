@@ -26,7 +26,7 @@ async function configureScope(page) {
   await expect(page.getByText('4 von 4 wählbaren Mitgliedern ausgewählt')).toBeVisible({ timeout: 15_000 });
 }
 
-async function archiveCurrent(page, publicId) {
+async function deleteCurrent(page, publicId) {
   const status = await page.evaluate(async (id) => {
     const session = await fetch('/api/session').then((response) => response.json());
     return fetch(`/api/insights/${id}`, {
@@ -55,7 +55,7 @@ test('MVP critical path explores a cohort, adds evidence and context, then moves
   test.setTimeout(180_000);
   const publicId = await loginAndCreate(page);
   const title = `Kohortenanalyse ${testInfo.project.name} ${publicId.slice(0, 6)}`;
-  let archived = false;
+  let deleted = false;
   try {
     await configureScope(page);
     await page.getByRole('button', { name: /Abstimmungen untersuchen/ }).click();
@@ -184,10 +184,10 @@ test('MVP critical path explores a cohort, adds evidence and context, then moves
     await expect(page.locator('[data-wizard-title]')).toHaveText(title);
     await expect(page.getByRole('tab', { name: /Rahmen/ })).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 });
     await page.waitForLoadState('networkidle');
-    await archiveCurrent(page, publicId);
-    archived = true;
+    await deleteCurrent(page, publicId);
+    deleted = true;
   } finally {
-    if (!archived) await archiveCurrent(page, publicId);
+    if (!deleted) await deleteCurrent(page, publicId);
   }
 });
 
@@ -204,7 +204,7 @@ test('public validation opens and focuses the first invalid wizard step', async 
     await expect(page.getByRole('tab', { name: /Abstimmungen/ })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByLabel('Abstimmungen und Geschäfte durchsuchen')).toBeFocused();
   } finally {
-    await archiveCurrent(page, publicId);
+    await deleteCurrent(page, publicId);
   }
 });
 
@@ -287,7 +287,7 @@ test('slow member and vote requests expose progress and disable duplicate action
   } finally {
     releaseMembers?.();
     releaseVotes?.();
-    await archiveCurrent(page, publicId);
+    await deleteCurrent(page, publicId);
   }
 });
 
@@ -373,7 +373,7 @@ test('AI vote filter can be cancelled, inspected, applied, removed and invalidat
     await expect(page.locator('[data-evidence-count]')).toHaveText('0');
   } finally {
     releaseAi?.();
-    await archiveCurrent(page, publicId);
+    await deleteCurrent(page, publicId);
   }
 });
 
@@ -424,7 +424,7 @@ test('@visual AI vote filter covers populated, applied, empty and error states i
       await modal.locator('[data-ai-discard]').click();
     }
   } finally {
-    await archiveCurrent(page, publicId);
+    await deleteCurrent(page, publicId);
   }
 });
 
@@ -446,6 +446,6 @@ test('@visual vote workspace remains composed in light and dark modes', async ({
       });
     }
   } finally {
-    await archiveCurrent(page, publicId);
+    await deleteCurrent(page, publicId);
   }
 });

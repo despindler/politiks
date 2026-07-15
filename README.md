@@ -217,7 +217,8 @@ The landing page loads the public insight catalogue for signed-out and signed-in
 
 - `GET /api/insights/public` for the deterministic paginated public catalogue;
 - `GET /api/insights/mine` for the authenticated owner's work;
-- `POST /api/insights`, `PATCH /api/insights/{public-id}`, and `DELETE /api/insights/{public-id}` for CSRF-protected owner-only lifecycle changes;
+- `POST /api/insights` and `PATCH /api/insights/{public-id}` for CSRF-protected owner-only lifecycle changes;
+- `DELETE /api/insights/{public-id}` for permanent owner-only deletion of the Insight, its selected members and evidence, campaign contexts, AI cache/run records, and uploaded campaign images;
 - `GET /api/insights/{public-id}` for a public insight or an owner's own record; and
 - `GET /api/shared-insights/{token}` plus `/geteilt/{token}` for opaque unlisted sharing with `noindex` signals.
 

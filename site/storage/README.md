@@ -8,4 +8,4 @@ This entire directory is denied over HTTP by both Apache rules and the local dev
 
 Only `.gitkeep` placeholders are tracked. Runtime contents are ignored.
 
-Removing a context item deletes its stored image. Failed database persistence cleans up a newly moved file. Archiving an insight retains its context because archive is reversible; the MVP intentionally has no hard-delete or timed-retention job.
+Removing a context item deletes its stored image. Failed database persistence cleans up a newly moved file. Permanently deleting an Insight cascades through its database-owned records and removes every campaign-context image attached to it.

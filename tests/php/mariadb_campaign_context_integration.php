@@ -55,7 +55,7 @@ try {
         static fn (string $path): bool => is_file($path),
         static fn (string $from, string $to): bool => rename($from, $to),
     );
-    $insights = new InsightStore(static fn (): PDO => $pdo, 'https://politiks.example.test');
+    $insights = new InsightStore(static fn (): PDO => $pdo, 'https://politiks.example.test', $storage);
     $draft = $insights->createDraft($ownerId);
 
     $youtube = $store->createRemote($ownerId, $draft['public_id'], [
@@ -140,15 +140,18 @@ try {
     }
 
     $imagePath = $storedImage['path'];
-    $store->delete($ownerId, $draft['public_id'], $image['id']);
-    if (is_file($imagePath)) throw new RuntimeException('Deleted image remained in protected storage.');
+    $insights->delete($ownerId, $draft['public_id']);
+    if (is_file($imagePath)) throw new RuntimeException('Insight deletion left its image in protected storage.');
+    $remainingContexts = $pdo->prepare('SELECT COUNT(*) FROM insight_campaign_context WHERE id IN (?, ?, ?)');
+    $remainingContexts->execute([$youtube['id'], $link['id'], $image['id']]);
+    if ((int) $remainingContexts->fetchColumn() !== 0) throw new RuntimeException('Insight deletion left campaign contexts in the database.');
 
     echo json_encode([
         'context_types_valid' => true,
         'image_validation_valid' => true,
         'ownership_isolated' => true,
         'authorized_streaming_valid' => true,
-        'ordering_and_deletion_valid' => true,
+        'insight_cascade_and_file_deletion_valid' => true,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;
 } catch (Throwable $error) {
     fwrite(STDERR, 'Campaign-context integration failed: ' . $error->getMessage() . PHP_EOL);

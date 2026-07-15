@@ -608,3 +608,23 @@ Keep all database schemas, migrations, and release artifacts outside the public 
 - Deterministic AI evaluation: 7 passed, 0 failed with zero external requests.
 - Deployment audit passed with 55 tracked runtime files and 36 PHP files linted; no SQL file or database installer is present under `site/`.
 - Bootstrap, release-dump, deployment-audit, and live-smoke PHP syntax checks passed; the Node.js fallback transport passed syntax validation.
+
+## Permanent owner deletion
+
+### Goal
+
+Make `draft` the reversible way to remove an Insight from public access and make the destructive action a truthful permanent deletion rather than an inaccessible soft archive.
+
+### Work completed
+
+- Replaced the owner editor's archive action with an explicitly irreversible German deletion confirmation and exposed deletion directly on every card in “Meine Insights”.
+- Changed the owner-only `DELETE /api/insights/{public-id}` endpoint to delete the Insight row transactionally after an ownership lock.
+- Relied on the existing cascading foreign keys to remove selected members, vote evidence, campaign contexts, AI filter cache entries, and AI run metadata in the same database transaction.
+- Collected uploaded campaign-image storage keys before the transaction commits and removed their protected files after successful database deletion, with storage-root containment checks.
+- Retained the unused `archived_at` schema column and exclusion predicates for compatibility with existing deployments; no database migration is required for the new deletion behavior.
+
+### Verification
+
+- Pure PHP/schema suite passed 38 checks, including all Insight foreign-key cascade contracts and the public-deployment boundary.
+- PHP and JavaScript syntax checks passed for the changed runtime and integration files.
+- The dedicated MariaDB lifecycle and campaign-context integrations include hard-deletion, cascade, and stored-image assertions; local execution requires the deliberately absent `.env.test` rather than risking a configured non-test database.

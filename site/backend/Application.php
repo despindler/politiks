@@ -232,7 +232,7 @@ final class Application
             if ($method === 'DELETE' && preg_match('~^/api/insights/([a-f0-9]{26})$~', $path, $matches) === 1) {
                 $this->requireCsrf();
                 $user = $this->requireUser();
-                $this->insights->archive($user['id'], $matches[1]);
+                $this->insights->delete($user['id'], $matches[1]);
                 Http::json(['ok' => true]);
             }
             if ($method === 'GET' && preg_match('~^/api/shared-insights/([A-Za-z0-9_-]{43})$~', $path, $matches) === 1) {

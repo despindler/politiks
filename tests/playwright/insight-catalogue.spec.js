@@ -41,16 +41,15 @@ test('owner sees every visibility state and creates a protected wizard draft', a
   await page.getByRole('button', { name: 'Neuen Insight erstellen' }).click();
   await expect(page).toHaveURL(/\/insights\/[a-f0-9]{26}\/bearbeiten$/);
   await expect(page.getByRole('heading', { name: 'Parlamentarischen Rahmen wählen' })).toBeVisible();
-  const publicId = page.url().match(/\/insights\/([a-f0-9]{26})\/bearbeiten$/)[1];
-  const deletionStatus = await page.evaluate(async (id) => {
-    const session = await fetch('/api/session').then((response) => response.json());
-    return fetch(`/api/insights/${id}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token },
-      body: '{}',
-    }).then((response) => response.status);
-  }, publicId);
-  expect(deletionStatus).toBe(200);
+  await page.goto('/#meine-insights');
+  const draft = mine.locator('article.owner-card').filter({ hasText: 'Unbenannter Insight' });
+  await expect(draft).toBeVisible();
+  page.once('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('endgültig löschen');
+    await dialog.accept();
+  });
+  await draft.getByRole('button', { name: 'Löschen' }).click();
+  await expect(draft).toHaveCount(0);
 });
 
 test('unlisted share page works without login and emits indexing protection', async ({ page }) => {

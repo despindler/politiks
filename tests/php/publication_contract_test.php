@@ -90,6 +90,21 @@ return [
             str_contains($schema, "visibility IN ('draft', 'unlisted', 'public')"),
             'Insight visibility lifecycle must be constrained.'
         );
+        foreach ([
+            'fk_insight_member_insight',
+            'fk_insight_vote_insight',
+            'fk_insight_context_insight',
+            'fk_ai_filter_cache_insight',
+            'fk_ai_filter_run_insight',
+        ] as $cascadeConstraint) {
+            assertTrue(
+                preg_match(
+                    sprintf('~CONSTRAINT %s FOREIGN KEY .*?REFERENCES insight .*?ON DELETE CASCADE~s', preg_quote($cascadeConstraint, '~')),
+                    $schema,
+                ) === 1,
+                sprintf('Insight-owned constraint %s must cascade permanent deletion.', $cascadeConstraint),
+            );
+        }
     },
     'schema bootstrap script is executable as individual statements' => static function (): void {
         $sql = file_get_contents(__DIR__ . '/../../database/mariadb/schema.sql');

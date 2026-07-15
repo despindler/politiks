@@ -16,6 +16,7 @@ final class InsightStore
     public function __construct(
         private readonly Closure $connectionFactory,
         private readonly string $appUrl,
+        private readonly ?string $storagePath = null,
     ) {
     }
 
@@ -221,16 +222,53 @@ final class InsightStore
         return $result;
     }
 
-    public function archive(int $ownerId, string $publicId): void
+    public function delete(int $ownerId, string $publicId): void
     {
-        $statement = $this->connection()->prepare(
-            "UPDATE insight SET visibility='draft', share_token_hash=NULL, published_at=NULL,
-             archived_at=UTC_TIMESTAMP(6), updated_at=UTC_TIMESTAMP(6)
-             WHERE public_id=? AND owner_user_id=? AND archived_at IS NULL"
-        );
-        $statement->execute([$publicId, $ownerId]);
-        if ($statement->rowCount() !== 1) {
-            throw $this->notFound();
+        $connection = $this->connection();
+        $connection->beginTransaction();
+        try {
+            $insight = $this->ownerRow($ownerId, $publicId, true);
+            $files = $connection->prepare(
+                "SELECT storage_key FROM insight_campaign_context
+                 WHERE insight_id=? AND storage_key IS NOT NULL AND storage_key<>''"
+            );
+            $files->execute([$insight['id']]);
+            $storageKeys = $files->fetchAll(PDO::FETCH_COLUMN);
+
+            $statement = $connection->prepare('DELETE FROM insight WHERE id=? AND owner_user_id=?');
+            $statement->execute([$insight['id'], $ownerId]);
+            if ($statement->rowCount() !== 1) {
+                throw $this->notFound();
+            }
+            $connection->commit();
+        } catch (Throwable $error) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+            throw $error;
+        }
+
+        foreach ($storageKeys as $storageKey) {
+            if (is_string($storageKey)) {
+                $this->deleteStoredFile($storageKey);
+            }
+        }
+    }
+
+    private function deleteStoredFile(string $storageKey): void
+    {
+        if ($this->storagePath === null || $this->storagePath === '') {
+            return;
+        }
+        $storageRoot = realpath($this->storagePath);
+        $path = $this->storagePath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $storageKey);
+        $realPath = realpath($path);
+        if ($storageRoot === false || $realPath === false || !is_file($realPath)
+            || !str_starts_with($realPath, rtrim($storageRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)) {
+            return;
+        }
+        if (!@unlink($realPath)) {
+            error_log(sprintf('Politiks could not remove deleted Insight file: %s', $realPath));
         }
     }
 
