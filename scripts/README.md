@@ -9,6 +9,7 @@ Current research commands include source acquisition/validation, full snapshot-p
 MariaDB commands:
 
 - `bootstrap_mariadb.php` applies `database/mariadb/schema.sql`. Its destructive `--reset` mode is guarded to `.env.test` only.
+- Existing production databases use the ordered forward SQL files under `database/mariadb/migrations/`; `npm.cmd run test:migration-db` destructively simulates the pre-AI state only in `.env.test`, applies the current migration twice, and proves existing application/reference counts remain unchanged.
 - `publish_reference_data.php` transactionally publishes or reuses an immutable SQLite-derived reference snapshot. Failure-injection arguments are guarded to `.env.test` and exist only for rollback verification.
 - `verify_reference_publication.php` is read-only. It reconciles recorded counts, publication state, exact identifier search, and a date-valid party/member/vote join.
 

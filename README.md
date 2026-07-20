@@ -181,6 +181,8 @@ For a shared host where phpMyAdmin cannot accept the complete production dump, f
 
 The deployable runtime and every browser asset live entirely under `site/`; development tooling remains outside it.
 
+For an existing deployed database, apply pending forward migrations under `database/mariadb/migrations/` in filename order instead of importing the destructive full release dump. The current AI-filter upgrade is `migrate_milestones_11_14_ai_filter.sql`; it is repeatable and covered by `npm.cmd run test:migration-db`. See `DEPLOYMENT.md` for the backup, import, verification, upload, and rollback sequence.
+
 ## Web application and Google Sign-In
 
 The framework-free application is served through `site/index.php`. Bootstrap 5.3.8 and Bootstrap Icons 1.13.1 are pinned in `package.json` and copied into `site/assets/vendor/`, so ordinary UI rendering has no CDN dependency. Google Identity Services is the only remotely loaded browser script and is loaded only when `GOOGLE_CLIENT_ID` is configured.

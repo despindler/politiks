@@ -27,14 +27,25 @@ async function configureScope(page) {
 }
 
 async function deleteCurrent(page, publicId) {
-  const status = await page.evaluate(async (id) => {
-    const session = await fetch('/api/session').then((response) => response.json());
-    return fetch(`/api/insights/${id}`, {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token }, body: '{}',
-      signal: AbortSignal.timeout(15_000),
-    }).then((response) => response.status);
-  }, publicId);
-  expect(status).toBe(200);
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const sessionResponse = await page.request.get('/api/session', { timeout: 15_000 });
+      if (!sessionResponse.ok()) throw new Error(`Session cleanup returned ${sessionResponse.status()}`);
+      const session = await sessionResponse.json();
+      const response = await page.request.delete(`/api/insights/${publicId}`, {
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf_token },
+        data: {},
+        timeout: 15_000,
+      });
+      if (response.status() === 200) return;
+      lastError = new Error(`Insight cleanup returned ${response.status()}`);
+    } catch (error) {
+      lastError = error;
+    }
+    await page.waitForTimeout(250 * attempt);
+  }
+  throw lastError;
 }
 
 function voteCard(page, column, title) {

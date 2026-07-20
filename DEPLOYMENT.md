@@ -152,6 +152,32 @@ php scripts/bootstrap_mariadb.php --env=site/.env
 
 `--reset` ist für Produktionsdateien technisch gesperrt. Alternativ kann ein Provider-Importwerkzeug `database/mariadb/schema.sql` mit einem DDL-berechtigten Benutzer importieren.
 
+### Bestehende Installation auf den KI-Filter-Stand migrieren
+
+Bei einer bereits laufenden Politiks-Datenbank **nicht** den vollständigen Dump aus `database/exports/` importieren: Er enthält `DROP TABLE`-Anweisungen und absichtlich keine bestehenden Nutzer oder Insights. Stattdessen:
+
+1. Datenbank und Uploads sichern und `AI_FILTER_ENABLED=0` belassen.
+2. Im Hosting-Control-Panel die bestehende Politiks-Datenbank auswählen.
+3. Nur `database/mariadb/migrations/migrate_milestones_11_14_ai_filter.sql` importieren.
+4. Danach den neuen Inhalt von `site/` hochladen; die bestehende `site/.env` und `site/storage/` nicht überschreiben.
+5. In der Datenbank prüfen:
+
+```sql
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = DATABASE()
+  AND table_name IN ('ai_prompt_template','ai_filter_cache','ai_filter_run')
+ORDER BY table_name;
+
+SELECT purpose, version, output_schema_version, is_active
+FROM ai_prompt_template
+ORDER BY purpose, version;
+```
+
+Die erste Abfrage muss drei Tabellen zeigen. Die zweite muss Query-Plan v1 und Selection v2 als aktiv sowie Selection v1 als inaktive Historie zeigen. Die Migration verwendet `CREATE TABLE IF NOT EXISTS` und konfliktfreie versionierte Inserts; sie kann nach einem unklaren Control-Panel-Timeout wiederholt werden. Sie löscht oder ändert keine bestehenden Nutzer, Insights, Evidenzen, Kampagneninhalte oder Referenzpublikationen und schaltet die Funktion nicht ein.
+
+Für künftige Upgrades alle noch nicht angewendeten Dateien unter `database/mariadb/migrations/` in aufsteigender Dateinamenreihenfolge importieren. `database/mariadb/schema.sql` bleibt parallel die vollständige, aktuelle Definition für neue Installationen. Datenbankdateien liegen absichtlich ausserhalb des öffentlichen `site/`-Verzeichnisses und werden nicht auf den Webspace kopiert.
+
 Wenn phpMyAdmin den vollständigen Produktionsdump wegen des Upload-Limits nicht annimmt, stehen unter `database/exports/` fünf jeweils eigenständig eingerahmte `.sql.gz`-Teile bereit. In phpMyAdmin zuerst die leere Zieldatenbank auswählen und danach `part-01-of-05` bis `part-05-of-05` genau einmal in numerischer Reihenfolge importieren. Jeder Teil setzt die für seine separate HTTP-Sitzung erforderlichen Zeichensatz-, Zeitzonen- und Fremdschlüsseloptionen selbst. Die Dateien nicht über eine teilweise importierte Datenbank erneut ausführen: Nach einem Fehler die leere Zieldatenbank beziehungsweise das Backup wiederherstellen und bei Teil 01 neu beginnen. Dateinamen, Prüfsummen und der lokale Verifikationsbefehl stehen in `database/exports/README.md`.
 
 Die Schweizer Referenzdaten werden nicht über HTTP geladen. Zuerst lokal die vollständige, checksum-geprüfte SQLite-Forschungsdatenbank neu erzeugen und klassifizieren. Dann von einer vertrauenswürdigen Maschine mit Datenbankzugriff atomar publizieren:
@@ -208,6 +234,8 @@ Vor Schema- oder Anwendungsänderungen immer Datenbank und Uploads sichern. Bei 
 Eine fehlerhafte neue Referenzpublikation wird nicht durch Löschen repariert. Wenn sie bereits aktiv ist, zunächst Ursache und Prüfergebnis dokumentieren. Die Aktivierung kann in einem kontrollierten Datenbank-Wartungsfenster auf eine verifizierte ältere Publikations-ID zurückgesetzt werden; sicherer ist die Wiederherstellung des unmittelbar davor erstellten Backups. Danach stets `verify_reference_publication.php` ausführen.
 
 Die KI-Vorauswahl hat einen unabhängigen, schemafreien Rollback: `AI_FILTER_ENABLED=0` deaktiviert den UI-Einstieg und den API-Service, ohne Insights, Evidenz oder Referenzdaten zu ändern. Bei semantischer Verschlechterung, unerwarteten Kosten oder Providerstörung zuerst diesen Schalter setzen. Code und Modell erst nach bestandener Evaluation wieder aktivieren; Cachezeilen dürfen bei Bedarf nach Sicherung und dokumentierter Ursache geleert werden.
+
+Die additive Migration `migrate_milestones_11_14_ai_filter.sql` wird bei einem Code-Rollback nicht rückwärts ausgeführt. Die drei ungenutzten Tabellen und die versionierte Prompt-Historie können gefahrlos bestehen bleiben; ein älterer Programmstand greift nicht darauf zu. Tabellen nicht manuell löschen, da dies Betriebsdaten vernichten könnte. Falls ausnahmsweise auch der Datenbankstand zurückgesetzt werden muss, ausschliesslich das unmittelbar vor der Migration erstellte und separat getestete Backup in eine neue Datenbank wiederherstellen.
 
 ## 10. Bekannte hostabhängige Prüfpunkte
 

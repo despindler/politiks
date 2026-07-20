@@ -33,6 +33,7 @@ Stand: 15. Juli 2026. „Automatisiert“ bedeutet, dass der Check im Repository
 - [x] Kriterien, öffentliche Kandidatenfelder und aggregierte Kohortenzahlen sind offengelegt; Identität, Ratsmitgliedernamen, Einzelstimmen, Uploads, Kampagnenmaterial und übrige Insight-Texte werden nicht an OpenAI gesendet.
 - [x] Das KI-Betriebsprotokoll enthält Request-ID, Hashes, Status, Laufzeit, Tokenzahlen, Modell und Prompt-Version, aber keine Rohkriterien, Kandidatentexte, Google-Identität oder Kampagneninhalte.
 - [x] Der Deployment-Audit verbietet deterministische KI-Testadapter/-zugangsdaten und verlangt deaktivierte, leere AI-Platzhalter.
+- [x] Eine idempotente Vorwärtsmigration ergänzt die KI-Tabellen und Prompt-Versionen in einer laufenden Datenbank, ohne bestehende Anwendungs- oder Referenzdaten zu verändern; der lokale MariaDB-Test führt sie zweimal aus.
 - [ ] Zielhost: Dateirechte, `.htaccess`-Sperren, Security-/Cache-Header und Log-Redaktion prüfen.
 - [ ] Zielhost: echten Google-Login und erlaubten JavaScript-Origin prüfen.
 - [ ] Zielhost: `DATENSCHUTZ_KI.md` mit Betreiberangaben/rechtlicher Prüfung veröffentlichen und OpenAI-Datenkontrollen protokollieren.
@@ -41,7 +42,7 @@ Stand: 15. Juli 2026. „Automatisiert“ bedeutet, dass der Check im Repository
 
 ## Release-Akzeptanz
 
-- [x] `npm run verify` umfasst PHP-, vier MariaDB-, Deployment- und Desktop/Mobile-Playwright-Prüfungen.
+- [x] `npm run verify` umfasst PHP-, sämtliche MariaDB-, Deployment- und Desktop/Mobile-Playwright-Prüfungen einschliesslich der wiederholbaren Bestandsmigration.
 - [x] `npm run verify:clean` setzt ausschliesslich eine `.env.test`-Datenbank zurück, erzeugt deterministische Zwei-Nutzer-/Sichtbarkeitsfixtures und führt die Gesamtsuite aus.
 - [x] Der browserbasierte kritische Pfad umfasst Katalog, Login, Scope, Mitglieder/Kohorte, Outlier, Suche/Evidenz, Kampagnenkontext, Entwurf, nicht gelisteten Link, Veröffentlichung, Signed-out-Katalog und Owner-Edit.
 - [x] Visuelle Referenzen decken Desktop/Mobile und Hell/Dunkel für Shell, Katalog, Abstimmungsarbeitsraum und Kampagnenkontext ab.

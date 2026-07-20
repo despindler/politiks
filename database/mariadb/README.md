@@ -31,4 +31,12 @@ php scripts/verify_reference_publication.php --env=.env.test
 
 `migrations/migrate_milestones_11_14_ai_filter.sql` is an idempotent MariaDB 10.6 migration for upgrading an existing milestone-10 application database through milestones 11-14 and the subsequent candidate-ID reliability fix. It creates the three AI-filter application tables, preserves selection prompt v1 as retired history, and activates hardened selection prompt v2 alongside query-plan prompt v1. Back up and select the existing application database in phpMyAdmin, then paste and execute the complete script from its SQL tab.
 
+The destructive simulation/repeatability check runs only against `.env.test`. It removes exactly the three AI tables, applies the standalone migration twice, and verifies that existing application and reference row counts remain unchanged:
+
+```powershell
+npm.cmd run test:migration-db
+```
+
+Never use the full release dump to upgrade a database containing application data: that dump deliberately drops tables and contains empty application tables. The exact production upgrade and verification queries are in `DEPLOYMENT.md`.
+
 This directory is repository tooling and is not deployed below the public `site/` document root. The application exposes no HTTP database installer or schema file.

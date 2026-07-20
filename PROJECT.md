@@ -628,3 +628,17 @@ Make `draft` the reversible way to remove an Insight from public access and make
 - Pure PHP/schema suite passed 38 checks, including all Insight foreign-key cascade contracts and the public-deployment boundary.
 - PHP and JavaScript syntax checks passed for the changed runtime and integration files.
 - The dedicated MariaDB lifecycle and campaign-context integrations include hard-deletion, cascade, and stored-image assertions; local execution requires the deliberately absent `.env.test` rather than risking a configured non-test database.
+## Existing-database migration regression acceptance
+
+### Work completed
+
+- Added a guarded `.env.test` integration check for the standalone milestone 11–14 migration. It removes only the three AI tables, applies the current migration twice, and preserves existing application and reference counts.
+- Expanded the deployment instructions with the backup-first Control Panel procedure, verification queries, forward-only upgrade convention, and additive rollback behavior.
+- Moved Playwright cleanup to its isolated authenticated request context with three bounded attempts while retaining permanent Insight deletion.
+
+### Verification
+
+- The migration executed all 12 statements twice, retained three versioned prompt rows, and left query-plan v1 plus selection v2 active while preserving retired selection v1 as audit history.
+- User, Insight, reference-publication, and voting-event counts remained unchanged across both migration runs.
+- AI foundation and hybrid-filter MariaDB suites passed immediately after the migrated schema with zero external AI requests.
+- Final `npm.cmd run verify:clean` passed from a reset `.env.test` database: 38 PHP checks, every MariaDB integration including repeat migration and permanent deletion, the deployment audit, and all 46 desktop/mobile behavioral and visual Playwright cases.

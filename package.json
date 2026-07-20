@@ -13,12 +13,13 @@
     "test:insight-db": "php tests/php/mariadb_insight_integration.php",
     "test:wizard-db": "php tests/php/mariadb_wizard_integration.php",
     "test:context-db": "php tests/php/mariadb_campaign_context_integration.php",
+    "test:migration-db": "php tests/php/mariadb_migration_integration.php --env=.env.test",
     "test:ai-db": "php tests/php/mariadb_ai_foundation_integration.php --env=.env.test",
     "test:ai-filter-db": "php tests/php/mariadb_ai_filter_integration.php --env=.env.test",
     "test:ai-eval": "php scripts/evaluate_ai_vote_filter.php",
     "test:ai-live": "php scripts/smoke_openai_ai_filter.php --env=.env.ai-smoke --allow-paid-api-call",
     "test:deploy": "php scripts/audit_deployment.php",
-    "verify": "npm run test:php && npm run test:auth-db && npm run test:insight-db && npm run test:wizard-db && npm run test:context-db && npm run test:ai-db && npm run test:ai-filter-db && npm run test:ai-eval && npm run test:deploy && npm test",
+    "verify": "npm run test:php && npm run test:auth-db && npm run test:insight-db && npm run test:wizard-db && npm run test:context-db && npm run test:migration-db && npm run test:ai-db && npm run test:ai-filter-db && npm run test:ai-eval && npm run test:deploy && npm test",
     "verify:clean": "php scripts/verify_mvp.php --env=.env.test --reset-test-database"
   },
   "devDependencies": {
